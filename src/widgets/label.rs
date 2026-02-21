@@ -34,7 +34,7 @@ impl Widget for Label {
         &mut self,
         context: &CanvasRenderingContext2d,
         _pointer: &PointerState,
-    ) -> Option<UiEvent> {
+    ) -> Vec<UiEvent> {
         context.set_font(self.style.font);
         context.set_fill_style_str(self.style.color);
         context.set_text_align("center");
@@ -44,7 +44,7 @@ impl Widget for Label {
             self.rect.x + self.rect.width / 2.0,
             self.rect.y + self.rect.height / 2.0,
         );
-        None
+        Vec::new()
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {

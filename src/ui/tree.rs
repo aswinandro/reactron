@@ -16,7 +16,7 @@ pub enum UiAction {
 pub trait Widget {
     fn desired_size(&self) -> (f64, f64);
     fn set_rect(&mut self, rect: Rect);
-    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Option<UiEvent>;
+    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Vec<UiEvent>;
     fn focusable(&self) -> bool {
         false
     }
@@ -279,9 +279,7 @@ impl UiTree {
                 height,
             };
             entry.widget.set_rect(rect);
-            if let Some(event) = entry.widget.draw(context, pointer) {
-                events.push(event);
-            }
+            events.extend(entry.widget.draw(context, pointer));
             if pointer.activate_primary && self.focus_index == Some(index) {
                 if let Some(event) = entry.widget.activate() {
                     events.push(event);
@@ -359,9 +357,7 @@ impl UiTree {
                 height,
             });
 
-            if let Some(event) = entry.widget.draw(context, pointer) {
-                events.push(event);
-            }
+            events.extend(entry.widget.draw(context, pointer));
             if pointer.activate_primary && self.focus_index == Some(index) {
                 if let Some(event) = entry.widget.activate() {
                     events.push(event);
@@ -421,9 +417,7 @@ impl UiTree {
                 width,
                 height,
             });
-            if let Some(event) = entry.widget.draw(context, pointer) {
-                events.push(event);
-            }
+            events.extend(entry.widget.draw(context, pointer));
             if pointer.activate_primary && self.focus_index == Some(index) {
                 if let Some(event) = entry.widget.activate() {
                     events.push(event);

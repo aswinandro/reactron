@@ -8,6 +8,7 @@ use crate::ui::tree::{
 use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::label::{Label, LabelStyle};
+use crate::widgets::panel::{Panel, PanelStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
 use crate::widgets::triangle_hero::TriangleHero;
 use wasm_bindgen::prelude::*;
@@ -29,7 +30,8 @@ pub struct DemoApp {
 const KEY_TRIANGLE: &str = "triangle_hero";
 const KEY_CLICK_LABEL: &str = "clicks_label";
 const KEY_HINT_LABEL: &str = "hint_label";
-const KEY_TOGGLE_NEON: &str = "toggle_neon";
+const KEY_CONTROLS_PANEL: &str = "controls_panel";
+const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
 
 impl DemoApp {
     pub fn new() -> Self {
@@ -146,50 +148,85 @@ impl DemoApp {
             },
         );
         ui.push_key_with(
-            "button_toggle_accent",
-            Box::new(Button {
-                action: UiAction::ToggleAccent,
+            KEY_CONTROLS_PANEL,
+            Box::new(Panel {
                 rect: Rect {
                     x: 0.0,
                     y: 0.0,
                     width: 408.0,
-                    height: 56.0,
+                    height: 64.0,
                 },
-                label: "Reactron Button",
-                style: ButtonStyle {
-                    idle_fill: "#18233d",
-                    hover_fill: "#283960",
-                    pressed_fill: "#1f2a47",
-                    border: "#3d5387",
-                    focus_border: "#27ffd8",
-                    text: REACTRON_THEME.text_primary,
-                    font: REACTRON_THEME.font_button,
+                style: PanelStyle {
+                    fill: "#0d1324",
+                    border: "#2a3350",
+                    border_width: 1.0,
                 },
-                focused: false,
+                padding: EdgeInsets::all(10.0),
+                child: {
+                    let mut row = UiTree::row(
+                        Rect {
+                            x: 0.0,
+                            y: 0.0,
+                            width: 388.0,
+                            height: 44.0,
+                        },
+                        10.0,
+                    );
+                    row.set_align_items(CrossAlign::Center);
+                    row.push_key_with(
+                        "ctrl_button_toggle_accent",
+                        Box::new(Button {
+                            action: UiAction::ToggleAccent,
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            label: "Reactron Button",
+                            style: ButtonStyle {
+                                idle_fill: "#18233d",
+                                hover_fill: "#283960",
+                                pressed_fill: "#1f2a47",
+                                border: "#3d5387",
+                                focus_border: "#27ffd8",
+                                text: REACTRON_THEME.text_primary,
+                                font: REACTRON_THEME.font_button,
+                            },
+                            focused: false,
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(2.0),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                    );
+                    row.push_key_with(
+                        KEY_CTRL_TOGGLE_NEON,
+                        Box::new(Toggle {
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            value: true,
+                            label: "Neon Mode",
+                            style: ToggleStyle::default(),
+                            focused: false,
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(1.0),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                    );
+                    row
+                },
             }),
             LayoutProps {
                 width: SizeSpec::Flex(1.0),
-                height: SizeSpec::Fixed(56.0),
-                align_self: Some(CrossAlign::Stretch),
-            },
-        );
-        ui.push_key_with(
-            KEY_TOGGLE_NEON,
-            Box::new(Toggle {
-                rect: Rect {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 408.0,
-                    height: 44.0,
-                },
-                value: true,
-                label: "Neon Mode",
-                style: ToggleStyle::default(),
-                focused: false,
-            }),
-            LayoutProps {
-                width: SizeSpec::Flex(1.0),
-                height: SizeSpec::Fixed(44.0),
+                height: SizeSpec::Fixed(64.0),
                 align_self: Some(CrossAlign::Stretch),
             },
         );
@@ -250,8 +287,10 @@ impl DemoApp {
         if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
             hint_label.set_text(interaction_text.to_string());
         }
-        if let Some(toggle) = self.ui.widget_mut_by_key::<Toggle>(KEY_TOGGLE_NEON) {
-            toggle.set_value(self.state.neon_mode);
+        if let Some(panel) = self.ui.widget_mut_by_key::<Panel>(KEY_CONTROLS_PANEL) {
+            if let Some(toggle) = panel.child_mut().widget_mut_by_key::<Toggle>(KEY_CTRL_TOGGLE_NEON) {
+                toggle.set_value(self.state.neon_mode);
+            }
         }
 
         let events = self.ui.draw(context, &self.state.pointer);

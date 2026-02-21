@@ -93,12 +93,12 @@ impl Widget for Button {
         self.rect = rect;
     }
 
-    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Option<UiEvent> {
+    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Vec<UiEvent> {
         let interaction = self.render_interaction(context, pointer);
         if interaction.clicked {
-            Some(UiEvent::Action(self.action))
+            vec![UiEvent::Action(self.action)]
         } else {
-            None
+            Vec::new()
         }
     }
 

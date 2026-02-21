@@ -28,7 +28,7 @@ impl Widget for TriangleHero {
         &mut self,
         context: &CanvasRenderingContext2d,
         _pointer: &PointerState,
-    ) -> Option<UiEvent> {
+    ) -> Vec<UiEvent> {
         let cx = self.rect.x + self.rect.width / 2.0;
         let top = self.rect.y;
         let base_y = self.rect.y + self.rect.height;
@@ -41,7 +41,7 @@ impl Widget for TriangleHero {
         context.close_path();
         context.set_fill_style_str(self.color);
         context.fill();
-        None
+        Vec::new()
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {

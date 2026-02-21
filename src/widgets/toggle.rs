@@ -49,7 +49,7 @@ impl Widget for Toggle {
         self.rect = rect;
     }
 
-    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Option<UiEvent> {
+    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Vec<UiEvent> {
         let hovered = self.rect.contains(pointer.x, pointer.y);
         let clicked = hovered && pointer.just_released;
         if clicked {
@@ -90,9 +90,9 @@ impl Widget for Toggle {
         context.fill_rect(knob_x, knob_y, knob_size, knob_size);
 
         if clicked {
-            Some(UiEvent::Action(UiAction::SetNeon(self.value)))
+            vec![UiEvent::Action(UiAction::SetNeon(self.value))]
         } else {
-            None
+            Vec::new()
         }
     }
 
