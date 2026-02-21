@@ -374,7 +374,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Tab focus | Shift+Arrows/Ctrl+A/C/X/V in input | Up/Down/Page for List/Select"
+            "Tab focus | Ctrl+Arrows word move | Shift/Ctrl+Shift select | Ctrl+A/C/X/V"
         };
 
         self.ui.set_area(Rect {

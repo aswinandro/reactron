@@ -79,6 +79,77 @@ impl TextInput {
         }
     }
 
+    fn is_word_char(ch: char) -> bool {
+        ch.is_ascii_alphanumeric() || ch == '_'
+    }
+
+    fn prev_word_boundary(&self) -> usize {
+        if self.cursor == 0 {
+            return 0;
+        }
+        let mut i = self.cursor;
+        while i > 0 {
+            let prev = self.value[..i]
+                .char_indices()
+                .last()
+                .map(|(idx, ch)| (idx, ch))
+                .unwrap_or((0, '\0'));
+            let (idx, ch) = prev;
+            if Self::is_word_char(ch) {
+                i = idx;
+                break;
+            }
+            i = idx;
+        }
+        while i > 0 {
+            let prev = self.value[..i]
+                .char_indices()
+                .last()
+                .map(|(idx, ch)| (idx, ch))
+                .unwrap_or((0, '\0'));
+            let (idx, ch) = prev;
+            if !Self::is_word_char(ch) {
+                break;
+            }
+            i = idx;
+        }
+        i
+    }
+
+    fn next_word_boundary(&self) -> usize {
+        if self.cursor >= self.value.len() {
+            return self.value.len();
+        }
+        let mut i = self.cursor;
+        while i < self.value.len() {
+            let ch = self.value[i..].chars().next().unwrap_or('\0');
+            if Self::is_word_char(ch) {
+                break;
+            }
+            i = self.next_char_boundary_from(i);
+        }
+        while i < self.value.len() {
+            let ch = self.value[i..].chars().next().unwrap_or('\0');
+            if !Self::is_word_char(ch) {
+                break;
+            }
+            i = self.next_char_boundary_from(i);
+        }
+        i
+    }
+
+    fn next_char_boundary_from(&self, index: usize) -> usize {
+        if index >= self.value.len() {
+            self.value.len()
+        } else {
+            self.value[index..]
+                .char_indices()
+                .nth(1)
+                .map(|(offset, _)| index + offset)
+                .unwrap_or(self.value.len())
+        }
+    }
+
     fn selection_range(&self) -> Option<(usize, usize)> {
         self.selection_anchor.and_then(|anchor| {
             if anchor == self.cursor {
@@ -182,12 +253,32 @@ impl Widget for TextInput {
                 }
                 self.cursor = self.next_char_boundary();
             }
+            if pointer.move_word_left_select {
+                if self.selection_anchor.is_none() {
+                    self.selection_anchor = Some(self.cursor);
+                }
+                self.cursor = self.prev_word_boundary();
+            }
+            if pointer.move_word_right_select {
+                if self.selection_anchor.is_none() {
+                    self.selection_anchor = Some(self.cursor);
+                }
+                self.cursor = self.next_word_boundary();
+            }
             if pointer.move_left {
                 self.cursor = self.prev_char_boundary();
                 self.clear_selection();
             }
             if pointer.move_right {
                 self.cursor = self.next_char_boundary();
+                self.clear_selection();
+            }
+            if pointer.move_word_left {
+                self.cursor = self.prev_word_boundary();
+                self.clear_selection();
+            }
+            if pointer.move_word_right {
+                self.cursor = self.next_word_boundary();
                 self.clear_selection();
             }
             if pointer.backspace {

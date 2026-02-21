@@ -120,7 +120,11 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    if event.shift_key() {
+                    if (event.ctrl_key() || event.meta_key()) && event.shift_key() {
+                        PointerSignal::MoveWordLeftSelect
+                    } else if event.ctrl_key() || event.meta_key() {
+                        PointerSignal::MoveWordLeft
+                    } else if event.shift_key() {
                         PointerSignal::MoveLeftSelect
                     } else {
                         PointerSignal::MoveLeft
@@ -133,7 +137,11 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    if event.shift_key() {
+                    if (event.ctrl_key() || event.meta_key()) && event.shift_key() {
+                        PointerSignal::MoveWordRightSelect
+                    } else if event.ctrl_key() || event.meta_key() {
+                        PointerSignal::MoveWordRight
+                    } else if event.shift_key() {
                         PointerSignal::MoveRightSelect
                     } else {
                         PointerSignal::MoveRight

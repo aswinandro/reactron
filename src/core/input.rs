@@ -14,6 +14,10 @@ pub struct PointerState {
     pub move_right: bool,
     pub move_left_select: bool,
     pub move_right_select: bool,
+    pub move_word_left: bool,
+    pub move_word_right: bool,
+    pub move_word_left_select: bool,
+    pub move_word_right_select: bool,
     pub move_up: bool,
     pub move_down: bool,
     pub move_page_up: bool,
@@ -42,6 +46,10 @@ pub enum PointerSignal {
     MoveRight,
     MoveLeftSelect,
     MoveRightSelect,
+    MoveWordLeft,
+    MoveWordRight,
+    MoveWordLeftSelect,
+    MoveWordRightSelect,
     MoveUp,
     MoveDown,
     MovePageUp,
@@ -112,6 +120,18 @@ impl PointerState {
             PointerSignal::MoveRightSelect => {
                 self.move_right_select = true;
             }
+            PointerSignal::MoveWordLeft => {
+                self.move_word_left = true;
+            }
+            PointerSignal::MoveWordRight => {
+                self.move_word_right = true;
+            }
+            PointerSignal::MoveWordLeftSelect => {
+                self.move_word_left_select = true;
+            }
+            PointerSignal::MoveWordRightSelect => {
+                self.move_word_right_select = true;
+            }
             PointerSignal::MoveUp => {
                 self.move_up = true;
             }
@@ -165,6 +185,10 @@ impl PointerState {
         self.move_right = false;
         self.move_left_select = false;
         self.move_right_select = false;
+        self.move_word_left = false;
+        self.move_word_right = false;
+        self.move_word_left_select = false;
+        self.move_word_right_select = false;
         self.move_up = false;
         self.move_down = false;
         self.move_page_up = false;
