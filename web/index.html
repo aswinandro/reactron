@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reactron - Triangle Milestone</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #05070f;
+        min-height: 100%;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      .frame {
+        width: min(90vw, 960px);
+      }
+
+      .title {
+        color: #9eb4ff;
+        margin: 0 0 10px;
+        letter-spacing: 0.04em;
+        font-size: 14px;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 3;
+        display: block;
+        border: 1px solid #2a3350;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <p class="title">reactron v0.1 - triangle milestone</p>
+      <canvas id="reactron-canvas" width="800" height="600"></canvas>
+    </div>
+    <script type="module">
+      import init from "./pkg/reactron.js";
+
+      init().catch((error) => {
+        console.error("Failed to initialize Reactron WASM:", error);
+      });
+    </script>
+  </body>
+</html>

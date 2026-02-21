@@ -1,0 +1,9 @@
+{
+  "name": "reactron",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build:web": "wasm-pack build --target web --out-dir web/pkg",
+    "dev:web": "npm run build:web && npx serve web -l 4173"
+  }
+}
