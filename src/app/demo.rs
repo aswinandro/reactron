@@ -215,6 +215,7 @@ impl DemoApp {
                             placeholder: "Type here...",
                             style: TextInputStyle::default(),
                             focused: false,
+                            cursor: 0,
                         }),
                         LayoutProps {
                             width: SizeSpec::Flex(2.0),
@@ -323,7 +324,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Type in input, Tab focus, Enter/Space activate"
+            "Tab focus, type, arrows/Home/End move cursor, Enter/Space activate"
         };
 
         self.ui.set_area(Rect {

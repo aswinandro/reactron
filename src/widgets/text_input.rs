@@ -11,6 +11,7 @@ pub struct TextInput {
     pub placeholder: &'static str,
     pub style: TextInputStyle,
     pub focused: bool,
+    pub cursor: usize,
 }
 
 pub struct TextInputStyle {
@@ -39,7 +40,36 @@ impl Default for TextInputStyle {
 
 impl TextInput {
     pub fn set_value(&mut self, value: String) {
-        self.value = value;
+        if self.value != value {
+            self.value = value;
+            self.cursor = self.value.len();
+        } else if self.cursor > self.value.len() {
+            self.cursor = self.value.len();
+        }
+    }
+
+    fn prev_char_boundary(&self) -> usize {
+        if self.cursor == 0 {
+            0
+        } else {
+            self.value[..self.cursor]
+                .char_indices()
+                .last()
+                .map(|(index, _)| index)
+                .unwrap_or(0)
+        }
+    }
+
+    fn next_char_boundary(&self) -> usize {
+        if self.cursor >= self.value.len() {
+            self.value.len()
+        } else {
+            self.value[self.cursor..]
+                .char_indices()
+                .nth(1)
+                .map(|(offset, _)| self.cursor + offset)
+                .unwrap_or(self.value.len())
+        }
     }
 }
 
@@ -56,15 +86,42 @@ impl Widget for TextInput {
         let mut events = Vec::new();
 
         if self.focused {
+            if pointer.move_home {
+                self.cursor = 0;
+            }
+            if pointer.move_end {
+                self.cursor = self.value.len();
+            }
+            if pointer.move_left {
+                self.cursor = self.prev_char_boundary();
+            }
+            if pointer.move_right {
+                self.cursor = self.next_char_boundary();
+            }
             if pointer.backspace {
-                self.value.pop();
-                events.push(UiEvent::ValueChanged {
-                    key: self.key,
-                    value: self.value.clone(),
-                });
+                if self.cursor > 0 {
+                    let start = self.prev_char_boundary();
+                    self.value.replace_range(start..self.cursor, "");
+                    self.cursor = start;
+                    events.push(UiEvent::ValueChanged {
+                        key: self.key,
+                        value: self.value.clone(),
+                    });
+                }
+            }
+            if pointer.delete_forward {
+                if self.cursor < self.value.len() {
+                    let end = self.next_char_boundary();
+                    self.value.replace_range(self.cursor..end, "");
+                    events.push(UiEvent::ValueChanged {
+                        key: self.key,
+                        value: self.value.clone(),
+                    });
+                }
             }
             if let Some(input) = &pointer.text_input {
-                self.value.push_str(input);
+                self.value.insert_str(self.cursor, input);
+                self.cursor += input.len();
                 events.push(UiEvent::ValueChanged {
                     key: self.key,
                     value: self.value.clone(),
@@ -98,6 +155,24 @@ impl Widget for TextInput {
             let _ = context.fill_text(&self.value, text_x, text_y);
         }
 
+        if self.focused {
+            let before_cursor = &self.value[..self.cursor.min(self.value.len())];
+            let width = context
+                .measure_text(before_cursor)
+                .ok()
+                .map(|metrics| metrics.width())
+                .unwrap_or(0.0);
+            let cursor_x = text_x + width;
+            let cursor_top = self.rect.y + 8.0;
+            let cursor_height = (self.rect.height - 16.0).max(0.0);
+            context.set_stroke_style_str(self.style.text);
+            context.set_line_width(1.5);
+            context.begin_path();
+            context.move_to(cursor_x, cursor_top);
+            context.line_to(cursor_x, cursor_top + cursor_height);
+            context.stroke();
+        }
+
         events
     }
 
@@ -113,4 +188,3 @@ impl Widget for TextInput {
         self
     }
 }
-

@@ -62,6 +62,11 @@ impl Widget for Panel {
             child_pointer.focus_next = false;
             child_pointer.text_input = None;
             child_pointer.backspace = false;
+            child_pointer.delete_forward = false;
+            child_pointer.move_left = false;
+            child_pointer.move_right = false;
+            child_pointer.move_home = false;
+            child_pointer.move_end = false;
         }
 
         self.child.draw(context, &child_pointer)

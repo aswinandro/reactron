@@ -9,6 +9,11 @@ pub struct PointerState {
     pub focus_next: bool,
     pub text_input: Option<String>,
     pub backspace: bool,
+    pub delete_forward: bool,
+    pub move_left: bool,
+    pub move_right: bool,
+    pub move_home: bool,
+    pub move_end: bool,
     pub scroll_y: f64,
 }
 
@@ -21,6 +26,11 @@ pub enum PointerSignal {
     FocusNext,
     TextInput(String),
     Backspace,
+    DeleteForward,
+    MoveLeft,
+    MoveRight,
+    MoveHome,
+    MoveEnd,
     Scroll { x: f64, y: f64, delta_y: f64 },
 }
 
@@ -65,6 +75,21 @@ impl PointerState {
             PointerSignal::Backspace => {
                 self.backspace = true;
             }
+            PointerSignal::DeleteForward => {
+                self.delete_forward = true;
+            }
+            PointerSignal::MoveLeft => {
+                self.move_left = true;
+            }
+            PointerSignal::MoveRight => {
+                self.move_right = true;
+            }
+            PointerSignal::MoveHome => {
+                self.move_home = true;
+            }
+            PointerSignal::MoveEnd => {
+                self.move_end = true;
+            }
             PointerSignal::Scroll { x, y, delta_y } => {
                 self.x = x;
                 self.y = y;
@@ -80,6 +105,11 @@ impl PointerState {
         self.focus_next = false;
         self.text_input = None;
         self.backspace = false;
+        self.delete_forward = false;
+        self.move_left = false;
+        self.move_right = false;
+        self.move_home = false;
+        self.move_end = false;
         self.scroll_y = 0.0;
     }
 }

@@ -63,6 +63,51 @@ pub fn start() -> Result<(), JsValue> {
                     &window_ref,
                     PointerSignal::Backspace,
                 );
+            } else if key == "Delete" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::DeleteForward,
+                );
+            } else if key == "ArrowLeft" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MoveLeft,
+                );
+            } else if key == "ArrowRight" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MoveRight,
+                );
+            } else if key == "Home" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MoveHome,
+                );
+            } else if key == "End" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MoveEnd,
+                );
             } else if key.len() == 1 && !event.ctrl_key() && !event.meta_key() {
                 dispatch_and_render(
                     &app_ref,

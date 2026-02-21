@@ -263,7 +263,6 @@ impl UiTree {
 
         let mut y = inner.y;
         for (index, entry) in self.widgets.iter_mut().enumerate() {
-            entry.widget.set_focused(self.focus_index == Some(index));
             let (desired_w, desired_h) = entry.widget.desired_size();
             let height = match entry.layout.height {
                 SizeSpec::Fixed(h) => h.max(0.0),
@@ -304,6 +303,10 @@ impl UiTree {
                 width,
                 height,
             };
+            if pointer.just_released && rect.contains(pointer.x, pointer.y) && entry.widget.focusable() {
+                self.focus_index = Some(index);
+            }
+            entry.widget.set_focused(self.focus_index == Some(index));
             entry.widget.set_rect(rect);
             events.extend(entry.widget.draw(context, pointer));
             if pointer.activate_primary && self.focus_index == Some(index) {
@@ -342,7 +345,6 @@ impl UiTree {
 
         let mut x = inner.x;
         for (index, entry) in self.widgets.iter_mut().enumerate() {
-            entry.widget.set_focused(self.focus_index == Some(index));
             let (desired_w, desired_h) = entry.widget.desired_size();
             let width = match entry.layout.width {
                 SizeSpec::Fixed(w) => w.max(0.0),
@@ -376,12 +378,17 @@ impl UiTree {
                 CrossAlign::End => inner.y + inner.height - height,
             };
 
-            entry.widget.set_rect(Rect {
+            let rect = Rect {
                 x,
                 y,
                 width,
                 height,
-            });
+            };
+            if pointer.just_released && rect.contains(pointer.x, pointer.y) && entry.widget.focusable() {
+                self.focus_index = Some(index);
+            }
+            entry.widget.set_focused(self.focus_index == Some(index));
+            entry.widget.set_rect(rect);
 
             events.extend(entry.widget.draw(context, pointer));
             if pointer.activate_primary && self.focus_index == Some(index) {
@@ -405,7 +412,6 @@ impl UiTree {
         let inner = self.inner_area();
 
         for (index, entry) in self.widgets.iter_mut().enumerate() {
-            entry.widget.set_focused(self.focus_index == Some(index));
             let (desired_w, desired_h) = entry.widget.desired_size();
             let width = match entry.layout.width {
                 SizeSpec::Fixed(w) => w.max(0.0).min(inner.width),
@@ -437,12 +443,17 @@ impl UiTree {
             };
             let y = inner.y + (inner.height - height) * 0.5;
 
-            entry.widget.set_rect(Rect {
+            let rect = Rect {
                 x,
                 y,
                 width,
                 height,
-            });
+            };
+            if pointer.just_released && rect.contains(pointer.x, pointer.y) && entry.widget.focusable() {
+                self.focus_index = Some(index);
+            }
+            entry.widget.set_focused(self.focus_index == Some(index));
+            entry.widget.set_rect(rect);
             events.extend(entry.widget.draw(context, pointer));
             if pointer.activate_primary && self.focus_index == Some(index) {
                 if let Some(event) = entry.widget.activate() {
