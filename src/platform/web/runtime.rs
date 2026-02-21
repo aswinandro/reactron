@@ -127,6 +127,24 @@ pub fn start() -> Result<(), JsValue> {
                     &window_ref,
                     PointerSignal::MoveDown,
                 );
+            } else if key == "PageUp" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MovePageUp,
+                );
+            } else if key == "PageDown" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MovePageDown,
+                );
             } else if key == "Home" {
                 event.prevent_default();
                 dispatch_and_render(

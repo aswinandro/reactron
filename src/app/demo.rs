@@ -24,6 +24,7 @@ pub struct DemoState {
     pub clicks: u32,
     pub query: String,
     pub preset: String,
+    pub selected_item: String,
     pub pointer: PointerState,
 }
 
@@ -167,6 +168,8 @@ impl DemoApp {
                 items: make_demo_items(""),
                 row_height: 28.0,
                 scroll_offset: 0.0,
+                key: "results_item",
+                selected: Some(0),
                 style: ListViewStyle::default(),
                 focused: false,
             }),
@@ -325,6 +328,7 @@ impl DemoApp {
                 neon_mode: true,
                 query: String::new(),
                 preset: "Ocean".to_string(),
+                selected_item: "Widget Item 001".to_string(),
                 ..DemoState::default()
             },
             ui,
@@ -369,7 +373,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Tab focus | Shift+Arrows/Ctrl+A select text | Up/Down/Esc for Select"
+            "Tab focus | Shift+Arrows/Ctrl+A text select | Up/Down/Page keys for List/Select"
         };
 
         self.ui.set_area(Rect {
@@ -384,8 +388,8 @@ impl DemoApp {
         }
         if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
             clicks_label.set_text(format!(
-                "Clicks: {} | Query: {} | Preset: {}",
-                self.state.clicks, self.state.query, self.state.preset
+                "Clicks: {} | Query: {} | Preset: {} | Selected: {}",
+                self.state.clicks, self.state.query, self.state.preset, self.state.selected_item
             ));
         }
         if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
@@ -393,6 +397,7 @@ impl DemoApp {
         }
         if let Some(list) = self.ui.widget_mut_by_key::<ListView>(KEY_RESULTS_LIST) {
             list.set_items(make_demo_items(&self.state.query));
+            list.set_selected_by_value(&self.state.selected_item);
         }
         if let Some(panel) = self.ui.widget_mut_by_key::<Panel>(KEY_CONTROLS_PANEL) {
             if let Some(input) = panel.child_mut().widget_mut_by_key::<TextInput>(KEY_CTRL_QUERY) {
@@ -427,6 +432,12 @@ impl DemoApp {
                     value,
                 } => {
                     self.state.preset = value;
+                }
+                UiEvent::ValueChanged {
+                    key: "results_item",
+                    value,
+                } => {
+                    self.state.selected_item = value;
                 }
                 UiEvent::ValueChanged { .. } => {}
             }
