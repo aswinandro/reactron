@@ -7,9 +7,9 @@ use crate::ui::tree::{
 };
 use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::container::{Container, ContainerStyle};
+use crate::widgets::form_field::{FormField, FormFieldStyle};
 use crate::widgets::label::{Label, LabelStyle};
 use crate::widgets::list_view::{ListView, ListViewStyle};
-use crate::widgets::panel::{Panel, PanelStyle};
 use crate::widgets::select::{Select, SelectStyle};
 use crate::widgets::text_input::{TextInput, TextInputStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
@@ -37,7 +37,7 @@ const KEY_TRIANGLE: &str = "triangle_hero";
 const KEY_CLICK_LABEL: &str = "clicks_label";
 const KEY_HINT_LABEL: &str = "hint_label";
 const KEY_RESULTS_LIST: &str = "results_list";
-const KEY_CONTROLS_PANEL: &str = "controls_panel";
+const KEY_CONTROLS_FIELD: &str = "controls_field";
 const KEY_CTRL_QUERY: &str = "ctrl_query";
 const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
 const KEY_CTRL_PRESET: &str = "ctrl_preset";
@@ -181,21 +181,18 @@ impl DemoApp {
             1,
         );
         ui.push_key_with_order(
-            KEY_CONTROLS_PANEL,
-            Box::new(Panel {
+            KEY_CONTROLS_FIELD,
+            Box::new(FormField {
                 rect: Rect {
                     x: 0.0,
                     y: 0.0,
                     width: 408.0,
-                    height: 64.0,
+                    height: 128.0,
                 },
-                style: PanelStyle {
-                    fill: "#0d1324",
-                    border: "#2a3350",
-                    focus_border: "#27ffd8",
-                    border_width: 1.0,
-                },
-                padding: EdgeInsets::all(10.0),
+                label: "Controls".to_string(),
+                helper_text: "Use Tab/Shift+Tab for focus traversal".to_string(),
+                error_text: String::new(),
+                has_error: false,
                 child: {
                     let mut row = UiTree::row(
                         Rect {
@@ -313,11 +310,12 @@ impl DemoApp {
                     );
                     row
                 },
+                style: FormFieldStyle::default(),
                 focused: false,
             }),
             LayoutProps {
                 width: SizeSpec::Flex(1.0),
-                height: SizeSpec::Fixed(64.0),
+                height: SizeSpec::Fixed(128.0),
                 align_self: Some(CrossAlign::Stretch),
             },
             2,
@@ -400,16 +398,22 @@ impl DemoApp {
             list.set_items(make_demo_items(&self.state.query));
             list.set_selected_by_value(&self.state.selected_item);
         }
-        if let Some(panel) = self.ui.widget_mut_by_key::<Panel>(KEY_CONTROLS_PANEL) {
-            if let Some(input) = panel.child_mut().widget_mut_by_key::<TextInput>(KEY_CTRL_QUERY) {
+        if let Some(field) = self.ui.widget_mut_by_key::<FormField>(KEY_CONTROLS_FIELD) {
+            if let Some(input) = field.child_mut().widget_mut_by_key::<TextInput>(KEY_CTRL_QUERY) {
                 input.set_value(self.state.query.clone());
             }
-            if let Some(toggle) = panel.child_mut().widget_mut_by_key::<Toggle>(KEY_CTRL_TOGGLE_NEON) {
+            if let Some(toggle) = field.child_mut().widget_mut_by_key::<Toggle>(KEY_CTRL_TOGGLE_NEON) {
                 toggle.set_value(self.state.neon_mode);
             }
-            if let Some(select) = panel.child_mut().widget_mut_by_key::<Select>(KEY_CTRL_PRESET) {
+            if let Some(select) = field.child_mut().widget_mut_by_key::<Select>(KEY_CTRL_PRESET) {
                 select.set_selected_by_value(&self.state.preset);
             }
+            let validation = if self.state.query.trim().is_empty() {
+                Some("Query is empty. Type to filter list items.".to_string())
+            } else {
+                None
+            };
+            field.set_validation(validation);
         }
 
         let events = self.ui.draw(context, &self.state.pointer);
