@@ -1,4 +1,4 @@
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct PointerState {
     pub x: f64,
     pub y: f64,
@@ -7,6 +7,8 @@ pub struct PointerState {
     pub just_released: bool,
     pub activate_primary: bool,
     pub focus_next: bool,
+    pub text_input: Option<String>,
+    pub backspace: bool,
 }
 
 pub enum PointerSignal {
@@ -16,6 +18,8 @@ pub enum PointerSignal {
     Leave,
     ActivatePrimary,
     FocusNext,
+    TextInput(String),
+    Backspace,
 }
 
 impl PointerState {
@@ -53,6 +57,12 @@ impl PointerState {
             PointerSignal::FocusNext => {
                 self.focus_next = true;
             }
+            PointerSignal::TextInput(value) => {
+                self.text_input = Some(value);
+            }
+            PointerSignal::Backspace => {
+                self.backspace = true;
+            }
         }
     }
 
@@ -61,5 +71,7 @@ impl PointerState {
         self.just_released = false;
         self.activate_primary = false;
         self.focus_next = false;
+        self.text_input = None;
+        self.backspace = false;
     }
 }

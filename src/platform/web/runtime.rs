@@ -37,6 +37,7 @@ pub fn start() -> Result<(), JsValue> {
         let on_keydown = Closure::<dyn FnMut(_)>::new(move |event: KeyboardEvent| {
             let key = event.key();
             if key == "Enter" || key == " " {
+                event.prevent_default();
                 dispatch_and_render(
                     &app_ref,
                     &context_ref,
@@ -45,12 +46,30 @@ pub fn start() -> Result<(), JsValue> {
                     PointerSignal::ActivatePrimary,
                 );
             } else if key == "Tab" {
+                event.prevent_default();
                 dispatch_and_render(
                     &app_ref,
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
                     PointerSignal::FocusNext,
+                );
+            } else if key == "Backspace" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::Backspace,
+                );
+            } else if key.len() == 1 && !event.ctrl_key() && !event.meta_key() {
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::TextInput(key),
                 );
             }
         });

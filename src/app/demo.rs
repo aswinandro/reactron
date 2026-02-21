@@ -9,6 +9,7 @@ use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::label::{Label, LabelStyle};
 use crate::widgets::panel::{Panel, PanelStyle};
+use crate::widgets::text_input::{TextInput, TextInputStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
 use crate::widgets::triangle_hero::TriangleHero;
 use wasm_bindgen::prelude::*;
@@ -19,6 +20,7 @@ pub struct DemoState {
     pub accent_on: bool,
     pub neon_mode: bool,
     pub clicks: u32,
+    pub query: String,
     pub pointer: PointerState,
 }
 
@@ -31,6 +33,7 @@ const KEY_TRIANGLE: &str = "triangle_hero";
 const KEY_CLICK_LABEL: &str = "clicks_label";
 const KEY_HINT_LABEL: &str = "hint_label";
 const KEY_CONTROLS_PANEL: &str = "controls_panel";
+const KEY_CTRL_QUERY: &str = "ctrl_query";
 const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
 
 impl DemoApp {
@@ -174,6 +177,27 @@ impl DemoApp {
                     );
                     row.set_align_items(CrossAlign::Center);
                     row.push_key_with(
+                        KEY_CTRL_QUERY,
+                        Box::new(TextInput {
+                            key: "search_query",
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            value: String::new(),
+                            placeholder: "Type here...",
+                            style: TextInputStyle::default(),
+                            focused: false,
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(2.0),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                    );
+                    row.push_key_with(
                         "ctrl_button_toggle_accent",
                         Box::new(Button {
                             action: UiAction::ToggleAccent,
@@ -196,7 +220,7 @@ impl DemoApp {
                             focused: false,
                         }),
                         LayoutProps {
-                            width: SizeSpec::Flex(2.0),
+                            width: SizeSpec::Flex(1.0),
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
@@ -235,6 +259,7 @@ impl DemoApp {
             state: DemoState {
                 accent_on: true,
                 neon_mode: true,
+                query: String::new(),
                 ..DemoState::default()
             },
             ui,
@@ -268,7 +293,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Click/tap to interact, Tab to focus controls, Enter to activate"
+            "Type in input, Tab focus, Enter/Space activate"
         };
 
         self.ui.set_area(Rect {
@@ -282,12 +307,18 @@ impl DemoApp {
             hero.set_color(hero_color);
         }
         if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
-            clicks_label.set_text(format!("Button clicks: {}", self.state.clicks));
+            clicks_label.set_text(format!(
+                "Button clicks: {} | Query: {}",
+                self.state.clicks, self.state.query
+            ));
         }
         if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
             hint_label.set_text(interaction_text.to_string());
         }
         if let Some(panel) = self.ui.widget_mut_by_key::<Panel>(KEY_CONTROLS_PANEL) {
+            if let Some(input) = panel.child_mut().widget_mut_by_key::<TextInput>(KEY_CTRL_QUERY) {
+                input.set_value(self.state.query.clone());
+            }
             if let Some(toggle) = panel.child_mut().widget_mut_by_key::<Toggle>(KEY_CTRL_TOGGLE_NEON) {
                 toggle.set_value(self.state.neon_mode);
             }
@@ -303,6 +334,13 @@ impl DemoApp {
                 UiEvent::Action(UiAction::SetNeon(enabled)) => {
                     self.state.neon_mode = enabled;
                 }
+                UiEvent::ValueChanged {
+                    key: "search_query",
+                    value,
+                } => {
+                    self.state.query = value;
+                }
+                UiEvent::ValueChanged { .. } => {}
             }
         }
 

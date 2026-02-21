@@ -5,6 +5,10 @@ use web_sys::CanvasRenderingContext2d;
 
 pub enum UiEvent {
     Action(UiAction),
+    ValueChanged {
+        key: &'static str,
+        value: String,
+    },
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
