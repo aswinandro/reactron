@@ -170,6 +170,7 @@ impl DemoApp {
                 scroll_offset: 0.0,
                 key: "results_item",
                 selected: Some(0),
+                selection_anchor: Some(0),
                 style: ListViewStyle::default(),
                 focused: false,
             }),
@@ -372,7 +373,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Tab/Shift+Tab focus | type jumps List/Select | Ctrl+Arrows word move/edit"
+            "Tab/Shift+Tab focus | Shift+Up/Down range-select list | Ctrl+Arrows word move/edit"
         };
 
         self.ui.set_area(Rect {

@@ -158,7 +158,11 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    PointerSignal::MoveUp,
+                    if event.shift_key() {
+                        PointerSignal::MoveUpSelect
+                    } else {
+                        PointerSignal::MoveUp
+                    },
                 );
             } else if key == "ArrowDown" {
                 event.prevent_default();
@@ -167,7 +171,11 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    PointerSignal::MoveDown,
+                    if event.shift_key() {
+                        PointerSignal::MoveDownSelect
+                    } else {
+                        PointerSignal::MoveDown
+                    },
                 );
             } else if key == "PageUp" {
                 event.prevent_default();

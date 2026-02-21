@@ -11,6 +11,7 @@ pub struct ListView {
     pub row_height: f64,
     pub scroll_offset: f64,
     pub selected: Option<usize>,
+    pub selection_anchor: Option<usize>,
     pub style: ListViewStyle,
     pub focused: bool,
 }
@@ -51,6 +52,7 @@ impl ListView {
 
     pub fn set_selected_by_value(&mut self, value: &str) {
         self.selected = self.items.iter().position(|item| item == value);
+        self.selection_anchor = self.selected;
     }
 
     fn selected_value(&self) -> String {
@@ -88,11 +90,13 @@ impl ListView {
     fn select_by_index(&mut self, index: usize) -> Option<UiEvent> {
         if self.items.is_empty() {
             self.selected = None;
+            self.selection_anchor = None;
             return None;
         }
         let next = index.min(self.items.len() - 1);
         if self.selected != Some(next) {
             self.selected = Some(next);
+            self.selection_anchor = Some(next);
             self.ensure_selected_visible();
             return self.emit_selection();
         }
@@ -112,6 +116,37 @@ impl ListView {
 
     fn page_delta(&self) -> isize {
         (self.rect.height / self.row_height).floor().max(1.0) as isize
+    }
+
+    fn extend_selection(&mut self, delta: isize) -> Option<UiEvent> {
+        if self.items.is_empty() {
+            return None;
+        }
+        let current = self.selected.unwrap_or(0) as isize;
+        let next = (current + delta).clamp(0, self.items.len() as isize - 1) as usize;
+        if self.selection_anchor.is_none() {
+            self.selection_anchor = Some(self.selected.unwrap_or(next));
+        }
+        if self.selected != Some(next) {
+            self.selected = Some(next);
+            self.ensure_selected_visible();
+            return self.emit_selection();
+        }
+        self.ensure_selected_visible();
+        None
+    }
+
+    fn selection_range(&self) -> Option<(usize, usize)> {
+        match (self.selection_anchor, self.selected) {
+            (Some(a), Some(b)) => {
+                if a <= b {
+                    Some((a, b))
+                } else {
+                    Some((b, a))
+                }
+            }
+            _ => None,
+        }
     }
 
     fn jump_to_match(&mut self, needle: &str) -> Option<UiEvent> {
@@ -161,26 +196,40 @@ impl Widget for ListView {
 
         if self.focused {
             if pointer.move_up {
+                self.selection_anchor = self.selected;
                 if let Some(event) = self.step_selection(-1) {
                     events.push(event);
                 }
             } else if pointer.move_down {
+                self.selection_anchor = self.selected;
                 if let Some(event) = self.step_selection(1) {
                     events.push(event);
                 }
+            } else if pointer.move_up_select {
+                if let Some(event) = self.extend_selection(-1) {
+                    events.push(event);
+                }
+            } else if pointer.move_down_select {
+                if let Some(event) = self.extend_selection(1) {
+                    events.push(event);
+                }
             } else if pointer.move_page_up {
+                self.selection_anchor = self.selected;
                 if let Some(event) = self.step_selection(-self.page_delta()) {
                     events.push(event);
                 }
             } else if pointer.move_page_down {
+                self.selection_anchor = self.selected;
                 if let Some(event) = self.step_selection(self.page_delta()) {
                     events.push(event);
                 }
             } else if pointer.move_home {
+                self.selection_anchor = self.selected;
                 if let Some(event) = self.select_by_index(0) {
                     events.push(event);
                 }
             } else if pointer.move_end && !self.items.is_empty() {
+                self.selection_anchor = self.selected;
                 if let Some(event) = self.select_by_index(self.items.len() - 1) {
                     events.push(event);
                 }
@@ -217,10 +266,14 @@ impl Widget for ListView {
         let start_index = (self.scroll_offset / self.row_height).floor().max(0.0) as usize;
         let visible_rows = (self.rect.height / self.row_height).ceil().max(0.0) as usize + 1;
         let end_index = (start_index + visible_rows).min(self.items.len());
+        let selected_range = self.selection_range();
 
         for index in start_index..end_index {
             let y = self.rect.y + (index as f64 * self.row_height - self.scroll_offset);
-            let row_color = if self.selected == Some(index) {
+            let in_range = selected_range
+                .map(|(start, end)| index >= start && index <= end)
+                .unwrap_or(false);
+            let row_color = if in_range {
                 "#274060"
             } else if index % 2 == 0 {
                 self.style.row_even
