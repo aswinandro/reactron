@@ -6,6 +6,7 @@ use crate::ui::tree::{UiAction, UiEvent, UiTree};
 use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::label::{Label, LabelStyle};
+use crate::widgets::toggle::{Toggle, ToggleStyle};
 use crate::widgets::triangle_hero::TriangleHero;
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
@@ -13,6 +14,7 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 #[derive(Default)]
 pub struct DemoState {
     pub accent_on: bool,
+    pub neon_mode: bool,
     pub clicks: u32,
     pub pointer: PointerState,
 }
@@ -22,13 +24,14 @@ pub struct DemoApp {
     ui: UiTree,
 }
 
-const WIDGET_TRIANGLE: usize = 1;
-const WIDGET_CLICK_LABEL: usize = 2;
-const WIDGET_HINT_LABEL: usize = 3;
+const KEY_TRIANGLE: &str = "triangle_hero";
+const KEY_CLICK_LABEL: &str = "clicks_label";
+const KEY_HINT_LABEL: &str = "hint_label";
+const KEY_TOGGLE_NEON: &str = "toggle_neon";
 
 impl DemoApp {
     pub fn new() -> Self {
-        let mut ui = UiTree::new(
+        let mut ui = UiTree::column(
             Rect {
                 x: 0.0,
                 y: 0.0,
@@ -37,7 +40,9 @@ impl DemoApp {
             },
             14.0,
         );
-        ui.push(Box::new(Container {
+        ui.push_key(
+            "panel",
+            Box::new(Container {
             rect: Rect {
                 x: 0.0,
                 y: 0.0,
@@ -49,8 +54,11 @@ impl DemoApp {
                 border: "#2a3350",
                 border_width: 1.0,
             },
-        }));
-        ui.push(Box::new(TriangleHero {
+        }),
+        );
+        ui.push_key(
+            KEY_TRIANGLE,
+            Box::new(TriangleHero {
             rect: Rect {
                 x: 0.0,
                 y: 0.0,
@@ -58,8 +66,27 @@ impl DemoApp {
                 height: 250.0,
             },
             color: REACTRON_THEME.accent_primary,
-        }));
-        ui.push(Box::new(Label {
+        }),
+        );
+        ui.push_key(
+            "title_label",
+            Box::new(Label {
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 440.0,
+                    height: 24.0,
+                },
+                text: "Reactron Demo Surface".to_string(),
+                style: LabelStyle {
+                    font: REACTRON_THEME.font_label,
+                    color: REACTRON_THEME.text_primary,
+                },
+            }),
+        );
+        ui.push_key(
+            KEY_CLICK_LABEL,
+            Box::new(Label {
             rect: Rect {
                 x: 0.0,
                 y: 0.0,
@@ -71,8 +98,11 @@ impl DemoApp {
                 font: REACTRON_THEME.font_label,
                 color: REACTRON_THEME.text_muted,
             },
-        }));
-        ui.push(Box::new(Label {
+        }),
+        );
+        ui.push_key(
+            KEY_HINT_LABEL,
+            Box::new(Label {
             rect: Rect {
                 x: 0.0,
                 y: 0.0,
@@ -84,8 +114,11 @@ impl DemoApp {
                 font: REACTRON_THEME.font_label,
                 color: REACTRON_THEME.text_muted,
             },
-        }));
-        ui.push(Box::new(Button {
+        }),
+        );
+        ui.push_key(
+            "button_toggle_accent",
+            Box::new(Button {
             action: UiAction::ToggleAccent,
             rect: Rect {
                 x: 0.0,
@@ -102,11 +135,27 @@ impl DemoApp {
                 text: REACTRON_THEME.text_primary,
                 font: REACTRON_THEME.font_button,
             },
-        }));
+        }),
+        );
+        ui.push_key(
+            KEY_TOGGLE_NEON,
+            Box::new(Toggle {
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 440.0,
+                    height: 44.0,
+                },
+                value: true,
+                label: "Neon Mode",
+                style: ToggleStyle::default(),
+            }),
+        );
 
         Self {
             state: DemoState {
                 accent_on: true,
+                neon_mode: true,
                 ..DemoState::default()
             },
             ui,
@@ -131,6 +180,11 @@ impl DemoApp {
         } else {
             REACTRON_THEME.accent_secondary
         };
+        let hero_color = if self.state.neon_mode {
+            triangle_color
+        } else {
+            "#7481a3"
+        };
 
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
@@ -145,14 +199,17 @@ impl DemoApp {
             height: 420.0,
         });
 
-        if let Some(hero) = self.ui.widget_mut::<TriangleHero>(WIDGET_TRIANGLE) {
-            hero.set_color(triangle_color);
+        if let Some(hero) = self.ui.widget_mut_by_key::<TriangleHero>(KEY_TRIANGLE) {
+            hero.set_color(hero_color);
         }
-        if let Some(clicks_label) = self.ui.widget_mut::<Label>(WIDGET_CLICK_LABEL) {
+        if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
             clicks_label.set_text(format!("Button clicks: {}", self.state.clicks));
         }
-        if let Some(hint_label) = self.ui.widget_mut::<Label>(WIDGET_HINT_LABEL) {
+        if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
             hint_label.set_text(interaction_text.to_string());
+        }
+        if let Some(toggle) = self.ui.widget_mut_by_key::<Toggle>(KEY_TOGGLE_NEON) {
+            toggle.set_value(self.state.neon_mode);
         }
 
         let events = self.ui.draw(context, &self.state.pointer);
@@ -161,6 +218,9 @@ impl DemoApp {
                 UiEvent::Action(UiAction::ToggleAccent) => {
                     self.state.accent_on = !self.state.accent_on;
                     self.state.clicks += 1;
+                }
+                UiEvent::Action(UiAction::SetNeon(enabled)) => {
+                    self.state.neon_mode = enabled;
                 }
             }
         }

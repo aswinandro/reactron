@@ -16,8 +16,8 @@ pub struct ContainerStyle {
 }
 
 impl Widget for Container {
-    fn desired_height(&self) -> f64 {
-        self.rect.height
+    fn desired_size(&self) -> (f64, f64) {
+        (self.rect.width, self.rect.height)
     }
 
     fn set_rect(&mut self, rect: Rect) {

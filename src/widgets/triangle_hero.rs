@@ -16,8 +16,8 @@ impl TriangleHero {
 }
 
 impl Widget for TriangleHero {
-    fn desired_height(&self) -> f64 {
-        self.rect.height
+    fn desired_size(&self) -> (f64, f64) {
+        (self.rect.width, self.rect.height)
     }
 
     fn set_rect(&mut self, rect: Rect) {
