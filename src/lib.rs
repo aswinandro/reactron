@@ -2,6 +2,8 @@ mod app;
 mod core;
 mod platform;
 mod render;
+mod theme;
+mod ui;
 mod widgets;
 
 use wasm_bindgen::prelude::*;

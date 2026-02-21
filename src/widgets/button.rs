@@ -1,8 +1,10 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
+use crate::ui::tree::{UiEvent, Widget};
 use web_sys::CanvasRenderingContext2d;
 
 pub struct Button {
+    pub action: &'static str,
     pub rect: Rect,
     pub label: &'static str,
     pub style: ButtonStyle,
@@ -14,6 +16,7 @@ pub struct ButtonStyle {
     pub pressed_fill: &'static str,
     pub border: &'static str,
     pub text: &'static str,
+    pub font: &'static str,
 }
 
 impl Default for ButtonStyle {
@@ -24,18 +27,21 @@ impl Default for ButtonStyle {
             pressed_fill: "#1f2a47",
             border: "#3d5387",
             text: "#d8e3ff",
+            font: "600 22px Consolas",
         }
     }
 }
 
 pub struct ButtonInteraction {
-    pub hovered: bool,
-    pub pressed: bool,
     pub clicked: bool,
 }
 
 impl Button {
-    pub fn draw(&self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> ButtonInteraction {
+    fn render_interaction(
+        &self,
+        context: &CanvasRenderingContext2d,
+        pointer: &PointerState,
+    ) -> ButtonInteraction {
         let hovered = self.rect.contains(pointer.x, pointer.y);
         let pressed = hovered && pointer.is_down;
         let clicked = hovered && pointer.just_released;
@@ -55,7 +61,7 @@ impl Button {
         context.set_line_width(2.0);
         context.stroke_rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height);
 
-        context.set_font("600 22px Consolas");
+        context.set_font(self.style.font);
         context.set_fill_style_str(self.style.text);
         context.set_text_align("center");
         context.set_text_baseline("middle");
@@ -65,11 +71,25 @@ impl Button {
             self.rect.y + self.rect.height / 2.0,
         );
 
-        ButtonInteraction {
-            hovered,
-            pressed,
-            clicked,
-        }
+        ButtonInteraction { clicked }
     }
 }
 
+impl Widget for Button {
+    fn desired_height(&self) -> f64 {
+        self.rect.height
+    }
+
+    fn set_rect(&mut self, rect: Rect) {
+        self.rect = rect;
+    }
+
+    fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Option<UiEvent> {
+        let interaction = self.render_interaction(context, pointer);
+        if interaction.clicked {
+            Some(UiEvent::Action(self.action))
+        } else {
+            None
+        }
+    }
+}

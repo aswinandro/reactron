@@ -1,7 +1,11 @@
+use crate::core::geometry::Rect;
 use crate::core::input::{PointerSignal, PointerState};
-use crate::core::layout::VerticalLayout;
 use crate::render::canvas2d;
+use crate::theme::REACTRON_THEME;
+use crate::ui::tree::{UiEvent, UiTree};
 use crate::widgets::button::{Button, ButtonStyle};
+use crate::widgets::label::{Label, LabelStyle};
+use crate::widgets::triangle_hero::TriangleHero;
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
@@ -38,54 +42,94 @@ impl DemoApp {
     ) -> Result<(), JsValue> {
         let (width, height) = canvas2d::sync_canvas_resolution(canvas, dpr);
 
-        canvas2d::clear(context, width, height, "#080b13");
+        canvas2d::clear(context, width, height, REACTRON_THEME.background);
         let triangle_color = if self.state.accent_on {
-            "#ff2d2d"
+            REACTRON_THEME.accent_primary
         } else {
-            "#27ffd8"
+            REACTRON_THEME.accent_secondary
         };
-        canvas2d::draw_triangle(context, width, height, triangle_color);
 
-        let mut layout = VerticalLayout::new(width * 0.5 - 160.0, height * 0.74, 320.0, 16.0);
-        let button = Button {
-            rect: layout.next(60.0),
-            label: "Reactron Button",
-            style: ButtonStyle::default(),
-        };
-        let button_state = button.draw(context, &self.state.pointer);
-
-        if button_state.clicked {
-            self.state.accent_on = !self.state.accent_on;
-            self.state.clicks += 1;
-        }
-
-        canvas2d::draw_centered_text(
-            context,
-            &format!("Button clicks: {}", self.state.clicks),
-            width / 2.0,
-            height - 52.0,
-            "14px Consolas",
-            "#9eb4ff",
-        );
-
-        let interaction_text = if button_state.pressed {
-            "Pointer down: press and release on button"
-        } else if button_state.hovered {
-            "Pointer over button"
+        let interaction_text = if self.state.pointer.is_down {
+            "Pointer down: release on button to trigger"
         } else {
             "Click/tap the button to toggle accent color"
         };
-        canvas2d::draw_centered_text(
-            context,
-            interaction_text,
-            width / 2.0,
-            height - 28.0,
-            "14px Consolas",
-            "#9eb4ff",
+
+        let mut ui = UiTree::new(
+            Rect {
+                x: width * 0.5 - 220.0,
+                y: height * 0.14,
+                width: 440.0,
+                height: 0.0,
+            },
+            14.0,
         );
+        ui.push(Box::new(TriangleHero {
+            rect: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 440.0,
+                height: 280.0,
+            },
+            color: triangle_color,
+        }));
+        ui.push(Box::new(Label {
+            rect: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 440.0,
+                height: 24.0,
+            },
+            text: format!("Button clicks: {}", self.state.clicks),
+            style: LabelStyle {
+                font: REACTRON_THEME.font_label,
+                color: REACTRON_THEME.text_muted,
+            },
+        }));
+        ui.push(Box::new(Label {
+            rect: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 440.0,
+                height: 24.0,
+            },
+            text: interaction_text.to_string(),
+            style: LabelStyle {
+                font: REACTRON_THEME.font_label,
+                color: REACTRON_THEME.text_muted,
+            },
+        }));
+        ui.push(Box::new(Button {
+            action: "toggle_accent",
+            rect: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 440.0,
+                height: 60.0,
+            },
+            label: "Reactron Button",
+            style: ButtonStyle {
+                idle_fill: "#18233d",
+                hover_fill: "#283960",
+                pressed_fill: "#1f2a47",
+                border: "#3d5387",
+                text: REACTRON_THEME.text_primary,
+                font: REACTRON_THEME.font_button,
+            },
+        }));
+
+        let events = ui.draw(context, &self.state.pointer);
+        for event in events {
+            match event {
+                UiEvent::Action("toggle_accent") => {
+                    self.state.accent_on = !self.state.accent_on;
+                    self.state.clicks += 1;
+                }
+                UiEvent::Action(_) => {}
+            }
+        }
 
         self.state.pointer.reset_transient();
         Ok(())
     }
 }
-

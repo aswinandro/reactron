@@ -39,29 +39,3 @@ pub fn clear(context: &CanvasRenderingContext2d, width: f64, height: f64, color:
     context.set_fill_style_str(color);
     context.fill_rect(0.0, 0.0, width, height);
 }
-
-pub fn draw_triangle(context: &CanvasRenderingContext2d, width: f64, height: f64, color: &str) {
-    context.begin_path();
-    context.move_to(width * 0.5, height * 0.18);
-    context.line_to(width * 0.275, height * 0.66);
-    context.line_to(width * 0.725, height * 0.66);
-    context.close_path();
-    context.set_fill_style_str(color);
-    context.fill();
-}
-
-pub fn draw_centered_text(
-    context: &CanvasRenderingContext2d,
-    text: &str,
-    x: f64,
-    y: f64,
-    font: &str,
-    color: &str,
-) {
-    context.set_font(font);
-    context.set_fill_style_str(color);
-    context.set_text_align("center");
-    context.set_text_baseline("middle");
-    let _ = context.fill_text(text, x, y);
-}
-
