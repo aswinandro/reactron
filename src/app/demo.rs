@@ -295,6 +295,7 @@ impl DemoApp {
                             selected: 0,
                             style: SelectStyle::default(),
                             focused: false,
+                            open: false,
                             label: "Preset",
                         }),
                         LayoutProps {

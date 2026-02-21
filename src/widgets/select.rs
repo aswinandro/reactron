@@ -11,25 +11,32 @@ pub struct Select {
     pub selected: usize,
     pub style: SelectStyle,
     pub focused: bool,
+    pub open: bool,
     pub label: &'static str,
 }
 
 pub struct SelectStyle {
     pub fill: &'static str,
+    pub dropdown_fill: &'static str,
+    pub option_hover_fill: &'static str,
     pub border: &'static str,
     pub focus_border: &'static str,
     pub text: &'static str,
     pub font: &'static str,
+    pub option_height: f64,
 }
 
 impl Default for SelectStyle {
     fn default() -> Self {
         Self {
             fill: "#111827",
+            dropdown_fill: "#0f172a",
+            option_hover_fill: "#1f2937",
             border: "#2a3350",
             focus_border: "#27ffd8",
             text: "#d8e3ff",
             font: "600 15px Consolas",
+            option_height: 34.0,
         }
     }
 }
@@ -58,6 +65,39 @@ impl Select {
             value: self.selected_value(),
         })
     }
+
+    fn step_prev(&mut self) -> Option<UiEvent> {
+        if self.options.is_empty() {
+            return None;
+        }
+        self.selected = if self.selected == 0 {
+            self.options.len() - 1
+        } else {
+            self.selected - 1
+        };
+        Some(UiEvent::ValueChanged {
+            key: self.key,
+            value: self.selected_value(),
+        })
+    }
+
+    fn dropdown_rect(&self) -> Rect {
+        Rect {
+            x: self.rect.x,
+            y: self.rect.y + self.rect.height + 2.0,
+            width: self.rect.width,
+            height: self.options.len() as f64 * self.style.option_height,
+        }
+    }
+
+    fn option_rect(&self, index: usize) -> Rect {
+        Rect {
+            x: self.rect.x,
+            y: self.rect.y + self.rect.height + 2.0 + index as f64 * self.style.option_height,
+            width: self.rect.width,
+            height: self.style.option_height,
+        }
+    }
 }
 
 impl Widget for Select {
@@ -72,9 +112,43 @@ impl Widget for Select {
     fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Vec<UiEvent> {
         let mut events = Vec::new();
         let hovered = self.rect.contains(pointer.x, pointer.y);
-        if hovered && pointer.just_released {
-            if let Some(event) = self.step_next() {
-                events.push(event);
+
+        if self.focused && !self.open {
+            if pointer.move_left {
+                if let Some(event) = self.step_prev() {
+                    events.push(event);
+                }
+            } else if pointer.move_right {
+                if let Some(event) = self.step_next() {
+                    events.push(event);
+                }
+            }
+        }
+
+        if pointer.just_released {
+            if hovered {
+                self.open = !self.open;
+            } else if self.open {
+                let mut clicked_option = false;
+                for (index, _) in self.options.iter().enumerate() {
+                    let option_rect = self.option_rect(index);
+                    if option_rect.contains(pointer.x, pointer.y) {
+                        self.selected = index;
+                        events.push(UiEvent::ValueChanged {
+                            key: self.key,
+                            value: self.selected_value(),
+                        });
+                        clicked_option = true;
+                        break;
+                    }
+                }
+                self.open = false;
+                if !clicked_option {
+                    let dropdown = self.dropdown_rect();
+                    if !dropdown.contains(pointer.x, pointer.y) {
+                        self.open = false;
+                    }
+                }
             }
         }
 
@@ -92,8 +166,48 @@ impl Widget for Select {
         context.set_fill_style_str(self.style.text);
         context.set_text_align("left");
         context.set_text_baseline("middle");
-        let text = format!("{}: {}  >", self.label, self.selected_value());
+        let arrow = if self.open { "v" } else { ">" };
+        let text = format!("{}: {}  {}", self.label, self.selected_value(), arrow);
         let _ = context.fill_text(&text, self.rect.x + 10.0, self.rect.y + self.rect.height * 0.5);
+
+        if self.open {
+            let dropdown_rect = self.dropdown_rect();
+            context.set_fill_style_str(self.style.dropdown_fill);
+            context.fill_rect(
+                dropdown_rect.x,
+                dropdown_rect.y,
+                dropdown_rect.width,
+                dropdown_rect.height,
+            );
+            context.set_stroke_style_str(self.style.border);
+            context.set_line_width(1.0);
+            context.stroke_rect(
+                dropdown_rect.x,
+                dropdown_rect.y,
+                dropdown_rect.width,
+                dropdown_rect.height,
+            );
+
+            for (index, option) in self.options.iter().enumerate() {
+                let option_rect = self.option_rect(index);
+                let option_hovered = option_rect.contains(pointer.x, pointer.y);
+                if option_hovered || index == self.selected {
+                    context.set_fill_style_str(self.style.option_hover_fill);
+                    context.fill_rect(
+                        option_rect.x,
+                        option_rect.y,
+                        option_rect.width,
+                        option_rect.height,
+                    );
+                }
+                context.set_fill_style_str(self.style.text);
+                let _ = context.fill_text(
+                    option,
+                    option_rect.x + 10.0,
+                    option_rect.y + option_rect.height * 0.5,
+                );
+            }
+        }
 
         events
     }
@@ -104,14 +218,25 @@ impl Widget for Select {
 
     fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
+        if !focused {
+            self.open = false;
+        }
     }
 
     fn activate(&mut self) -> Option<UiEvent> {
-        self.step_next()
+        if self.open {
+            self.open = false;
+            Some(UiEvent::ValueChanged {
+                key: self.key,
+                value: self.selected_value(),
+            })
+        } else {
+            self.open = true;
+            None
+        }
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
-
