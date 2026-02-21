@@ -6,7 +6,7 @@ use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, PointerEvent, Window};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, PointerEvent, Window};
 
 pub fn start() -> Result<(), JsValue> {
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("window not available"))?;
@@ -25,8 +25,30 @@ pub fn start() -> Result<(), JsValue> {
         .dyn_into::<CanvasRenderingContext2d>()?;
 
     let app = Rc::new(RefCell::new(DemoApp::new()));
+    let _ = canvas.set_attribute("tabindex", "0");
 
     render_now(&app, &context, &canvas, &window)?;
+
+    {
+        let app_ref = Rc::clone(&app);
+        let context_ref = context.clone();
+        let canvas_ref = canvas.clone();
+        let window_ref = window.clone();
+        let on_keydown = Closure::<dyn FnMut(_)>::new(move |event: KeyboardEvent| {
+            let key = event.key();
+            if key == "Enter" || key == " " {
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::ActivatePrimary,
+                );
+            }
+        });
+        window.add_event_listener_with_callback("keydown", on_keydown.as_ref().unchecked_ref())?;
+        on_keydown.forget();
+    }
 
     {
         let app_ref = Rc::clone(&app);
@@ -134,4 +156,3 @@ fn dispatch_and_render(
         web_sys::console::error_1(&error);
     }
 }
-

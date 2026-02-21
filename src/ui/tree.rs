@@ -1,6 +1,5 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
-use crate::core::layout::VerticalLayout;
 use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
 
@@ -26,11 +25,65 @@ pub trait Widget {
 pub enum LayoutDirection {
     Column,
     Row,
+    Stack,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy)]
+pub enum CrossAlign {
+    Start,
+    Center,
+    End,
+    Stretch,
+}
+
+#[derive(Clone, Copy)]
+pub enum SizeSpec {
+    Auto,
+    Fixed(f64),
+    Flex(f64),
+}
+
+#[derive(Clone, Copy)]
+pub struct LayoutProps {
+    pub width: SizeSpec,
+    pub height: SizeSpec,
+    pub align_self: Option<CrossAlign>,
+}
+
+impl LayoutProps {
+    pub fn auto() -> Self {
+        Self {
+            width: SizeSpec::Auto,
+            height: SizeSpec::Auto,
+            align_self: None,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct EdgeInsets {
+    pub left: f64,
+    pub right: f64,
+    pub top: f64,
+    pub bottom: f64,
+}
+
+impl EdgeInsets {
+    pub fn all(value: f64) -> Self {
+        Self {
+            left: value,
+            right: value,
+            top: value,
+            bottom: value,
+        }
+    }
 }
 
 struct WidgetEntry {
     key: &'static str,
     widget: Box<dyn Widget>,
+    layout: LayoutProps,
 }
 
 pub struct UiTree {
@@ -38,6 +91,8 @@ pub struct UiTree {
     area: Rect,
     gap: f64,
     direction: LayoutDirection,
+    padding: EdgeInsets,
+    align_items: CrossAlign,
 }
 
 impl UiTree {
@@ -47,6 +102,8 @@ impl UiTree {
             area,
             gap,
             direction: LayoutDirection::Column,
+            padding: EdgeInsets::all(0.0),
+            align_items: CrossAlign::Stretch,
         }
     }
 
@@ -57,6 +114,20 @@ impl UiTree {
             area,
             gap,
             direction: LayoutDirection::Row,
+            padding: EdgeInsets::all(0.0),
+            align_items: CrossAlign::Center,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn stack(area: Rect) -> Self {
+        Self {
+            widgets: Vec::new(),
+            area,
+            gap: 0.0,
+            direction: LayoutDirection::Stack,
+            padding: EdgeInsets::all(0.0),
+            align_items: CrossAlign::Stretch,
         }
     }
 
@@ -65,15 +136,37 @@ impl UiTree {
         self.widgets.push(WidgetEntry {
             key: "",
             widget,
+            layout: LayoutProps::auto(),
         });
     }
 
+    #[allow(dead_code)]
     pub fn push_key(&mut self, key: &'static str, widget: Box<dyn Widget>) {
-        self.widgets.push(WidgetEntry { key, widget });
+        self.widgets.push(WidgetEntry {
+            key,
+            widget,
+            layout: LayoutProps::auto(),
+        });
+    }
+
+    pub fn push_key_with(&mut self, key: &'static str, widget: Box<dyn Widget>, layout: LayoutProps) {
+        self.widgets.push(WidgetEntry {
+            key,
+            widget,
+            layout,
+        });
     }
 
     pub fn set_area(&mut self, area: Rect) {
         self.area = area;
+    }
+
+    pub fn set_padding(&mut self, padding: EdgeInsets) {
+        self.padding = padding;
+    }
+
+    pub fn set_align_items(&mut self, align: CrossAlign) {
+        self.align_items = align;
     }
 
     #[allow(dead_code)]
@@ -102,6 +195,7 @@ impl UiTree {
         match self.direction {
             LayoutDirection::Column => self.draw_column(context, pointer),
             LayoutDirection::Row => self.draw_row(context, pointer),
+            LayoutDirection::Stack => self.draw_stack(context, pointer),
         }
     }
 
@@ -111,15 +205,68 @@ impl UiTree {
         pointer: &PointerState,
     ) -> Vec<UiEvent> {
         let mut events = Vec::new();
-        let mut layout = VerticalLayout::new(self.area.x, self.area.y, self.area.width, self.gap);
+        let inner = self.inner_area();
 
+        let total_gap = self.gap * (self.widgets.len().saturating_sub(1) as f64);
+        let mut fixed_height = 0.0;
+        let mut total_flex = 0.0;
+        for entry in &self.widgets {
+            let (_, desired_h) = entry.widget.desired_size();
+            match entry.layout.height {
+                SizeSpec::Fixed(h) => fixed_height += h.max(0.0),
+                SizeSpec::Auto => fixed_height += desired_h.max(0.0),
+                SizeSpec::Flex(f) => total_flex += f.max(0.0),
+            }
+        }
+        let remaining = (inner.height - fixed_height - total_gap).max(0.0);
+
+        let mut y = inner.y;
         for entry in &mut self.widgets {
-            let (_, desired_height) = entry.widget.desired_size();
-            let rect = layout.next(desired_height);
+            let (desired_w, desired_h) = entry.widget.desired_size();
+            let height = match entry.layout.height {
+                SizeSpec::Fixed(h) => h.max(0.0),
+                SizeSpec::Auto => desired_h.max(0.0),
+                SizeSpec::Flex(f) => {
+                    if total_flex > 0.0 {
+                        remaining * (f.max(0.0) / total_flex)
+                    } else {
+                        0.0
+                    }
+                }
+            };
+
+            let mut width = match entry.layout.width {
+                SizeSpec::Fixed(w) => w.max(0.0).min(inner.width),
+                SizeSpec::Auto => {
+                    if desired_w > 0.0 {
+                        desired_w.min(inner.width)
+                    } else {
+                        inner.width
+                    }
+                }
+                SizeSpec::Flex(_) => inner.width,
+            };
+            let align = entry.layout.align_self.unwrap_or(self.align_items);
+            if matches!(align, CrossAlign::Stretch) {
+                width = inner.width;
+            }
+            let x = match align {
+                CrossAlign::Start | CrossAlign::Stretch => inner.x,
+                CrossAlign::Center => inner.x + (inner.width - width) * 0.5,
+                CrossAlign::End => inner.x + inner.width - width,
+            };
+
+            let rect = Rect {
+                x,
+                y,
+                width,
+                height,
+            };
             entry.widget.set_rect(rect);
             if let Some(event) = entry.widget.draw(context, pointer) {
                 events.push(event);
             }
+            y += height + self.gap;
         }
 
         events
@@ -131,37 +278,57 @@ impl UiTree {
         pointer: &PointerState,
     ) -> Vec<UiEvent> {
         let mut events = Vec::new();
+        let inner = self.inner_area();
         let count = self.widgets.len();
         let total_gap = self.gap * (count.saturating_sub(1) as f64);
 
         let mut fixed_width = 0.0;
-        let mut flexible = 0usize;
+        let mut total_flex = 0.0;
         for entry in &self.widgets {
-            let (w, _) = entry.widget.desired_size();
-            if w > 0.0 {
-                fixed_width += w;
-            } else {
-                flexible += 1;
+            let (desired_w, _) = entry.widget.desired_size();
+            match entry.layout.width {
+                SizeSpec::Fixed(w) => fixed_width += w.max(0.0),
+                SizeSpec::Auto => fixed_width += desired_w.max(0.0),
+                SizeSpec::Flex(f) => total_flex += f.max(0.0),
             }
         }
 
-        let remaining = (self.area.width - fixed_width - total_gap).max(0.0);
-        let flex_width = if flexible > 0 {
-            remaining / flexible as f64
-        } else {
-            0.0
-        };
+        let remaining = (inner.width - fixed_width - total_gap).max(0.0);
 
-        let mut x = self.area.x;
+        let mut x = inner.x;
         for entry in &mut self.widgets {
             let (desired_w, desired_h) = entry.widget.desired_size();
-            let width = if desired_w > 0.0 { desired_w } else { flex_width };
-            let height = if desired_h > 0.0 {
-                desired_h.min(self.area.height)
-            } else {
-                self.area.height
+            let width = match entry.layout.width {
+                SizeSpec::Fixed(w) => w.max(0.0),
+                SizeSpec::Auto => desired_w.max(0.0),
+                SizeSpec::Flex(f) => {
+                    if total_flex > 0.0 {
+                        remaining * (f.max(0.0) / total_flex)
+                    } else {
+                        0.0
+                    }
+                }
             };
-            let y = self.area.y + (self.area.height - height) * 0.5;
+            let mut height = match entry.layout.height {
+                SizeSpec::Fixed(h) => h.max(0.0).min(inner.height),
+                SizeSpec::Auto => {
+                    if desired_h > 0.0 {
+                        desired_h.min(inner.height)
+                    } else {
+                        inner.height
+                    }
+                }
+                SizeSpec::Flex(_) => inner.height,
+            };
+            let align = entry.layout.align_self.unwrap_or(self.align_items);
+            if matches!(align, CrossAlign::Stretch) {
+                height = inner.height;
+            }
+            let y = match align {
+                CrossAlign::Start | CrossAlign::Stretch => inner.y,
+                CrossAlign::Center => inner.y + (inner.height - height) * 0.5,
+                CrossAlign::End => inner.y + inner.height - height,
+            };
 
             entry.widget.set_rect(Rect {
                 x,
@@ -178,5 +345,72 @@ impl UiTree {
         }
 
         events
+    }
+
+    fn draw_stack(
+        &mut self,
+        context: &CanvasRenderingContext2d,
+        pointer: &PointerState,
+    ) -> Vec<UiEvent> {
+        let mut events = Vec::new();
+        let inner = self.inner_area();
+
+        for entry in &mut self.widgets {
+            let (desired_w, desired_h) = entry.widget.desired_size();
+            let width = match entry.layout.width {
+                SizeSpec::Fixed(w) => w.max(0.0).min(inner.width),
+                SizeSpec::Auto => {
+                    if desired_w > 0.0 {
+                        desired_w.min(inner.width)
+                    } else {
+                        inner.width
+                    }
+                }
+                SizeSpec::Flex(_) => inner.width,
+            };
+            let height = match entry.layout.height {
+                SizeSpec::Fixed(h) => h.max(0.0).min(inner.height),
+                SizeSpec::Auto => {
+                    if desired_h > 0.0 {
+                        desired_h.min(inner.height)
+                    } else {
+                        inner.height
+                    }
+                }
+                SizeSpec::Flex(_) => inner.height,
+            };
+            let align = entry.layout.align_self.unwrap_or(self.align_items);
+            let x = match align {
+                CrossAlign::Start | CrossAlign::Stretch => inner.x,
+                CrossAlign::Center => inner.x + (inner.width - width) * 0.5,
+                CrossAlign::End => inner.x + inner.width - width,
+            };
+            let y = inner.y + (inner.height - height) * 0.5;
+
+            entry.widget.set_rect(Rect {
+                x,
+                y,
+                width,
+                height,
+            });
+            if let Some(event) = entry.widget.draw(context, pointer) {
+                events.push(event);
+            }
+        }
+
+        events
+    }
+
+    fn inner_area(&self) -> Rect {
+        let x = self.area.x + self.padding.left;
+        let y = self.area.y + self.padding.top;
+        let width = (self.area.width - self.padding.left - self.padding.right).max(0.0);
+        let height = (self.area.height - self.padding.top - self.padding.bottom).max(0.0);
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 }

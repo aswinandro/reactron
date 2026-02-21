@@ -18,6 +18,7 @@ features = [
     "Element",
     "EventTarget",
     "HtmlCanvasElement",
+    "KeyboardEvent",
     "PointerEvent",
     "Window",
     "console",

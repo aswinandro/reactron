@@ -2,7 +2,9 @@ use crate::core::geometry::Rect;
 use crate::core::input::{PointerSignal, PointerState};
 use crate::render::canvas2d;
 use crate::theme::REACTRON_THEME;
-use crate::ui::tree::{UiAction, UiEvent, UiTree};
+use crate::ui::tree::{
+    CrossAlign, EdgeInsets, LayoutProps, SizeSpec, UiAction, UiEvent, UiTree,
+};
 use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::label::{Label, LabelStyle};
@@ -40,41 +42,53 @@ impl DemoApp {
             },
             14.0,
         );
-        ui.push_key(
-            "panel",
+        ui.set_padding(EdgeInsets::all(16.0));
+        ui.set_align_items(CrossAlign::Center);
+        ui.push_key_with(
+            "accent_bar",
             Box::new(Container {
-            rect: Rect {
-                x: 0.0,
-                y: 0.0,
-                width: 440.0,
-                height: 420.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 408.0,
+                    height: 6.0,
+                },
+                style: ContainerStyle {
+                    fill: REACTRON_THEME.accent_secondary,
+                    border: "#2a3350",
+                    border_width: 0.0,
+                },
+            }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(6.0),
+                align_self: Some(CrossAlign::Stretch),
             },
-            style: ContainerStyle {
-                fill: "#0d1324",
-                border: "#2a3350",
-                border_width: 1.0,
-            },
-        }),
         );
-        ui.push_key(
+        ui.push_key_with(
             KEY_TRIANGLE,
             Box::new(TriangleHero {
-            rect: Rect {
-                x: 0.0,
-                y: 0.0,
-                width: 440.0,
-                height: 250.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 300.0,
+                    height: 220.0,
+                },
+                color: REACTRON_THEME.accent_primary,
+            }),
+            LayoutProps {
+                width: SizeSpec::Fixed(300.0),
+                height: SizeSpec::Fixed(220.0),
+                align_self: Some(CrossAlign::Center),
             },
-            color: REACTRON_THEME.accent_primary,
-        }),
         );
-        ui.push_key(
+        ui.push_key_with(
             "title_label",
             Box::new(Label {
                 rect: Rect {
                     x: 0.0,
                     y: 0.0,
-                    width: 440.0,
+                    width: 408.0,
                     height: 24.0,
                 },
                 text: "Reactron Demo Surface".to_string(),
@@ -83,73 +97,98 @@ impl DemoApp {
                     color: REACTRON_THEME.text_primary,
                 },
             }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(24.0),
+                align_self: Some(CrossAlign::Stretch),
+            },
         );
-        ui.push_key(
+        ui.push_key_with(
             KEY_CLICK_LABEL,
             Box::new(Label {
-            rect: Rect {
-                x: 0.0,
-                y: 0.0,
-                width: 440.0,
-                height: 24.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 408.0,
+                    height: 24.0,
+                },
+                text: "Button clicks: 0".to_string(),
+                style: LabelStyle {
+                    font: REACTRON_THEME.font_label,
+                    color: REACTRON_THEME.text_muted,
+                },
+            }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(24.0),
+                align_self: Some(CrossAlign::Stretch),
             },
-            text: "Button clicks: 0".to_string(),
-            style: LabelStyle {
-                font: REACTRON_THEME.font_label,
-                color: REACTRON_THEME.text_muted,
-            },
-        }),
         );
-        ui.push_key(
+        ui.push_key_with(
             KEY_HINT_LABEL,
             Box::new(Label {
-            rect: Rect {
-                x: 0.0,
-                y: 0.0,
-                width: 440.0,
-                height: 24.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 408.0,
+                    height: 24.0,
+                },
+                text: "Click/tap the button to toggle accent color".to_string(),
+                style: LabelStyle {
+                    font: REACTRON_THEME.font_label,
+                    color: REACTRON_THEME.text_muted,
+                },
+            }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(24.0),
+                align_self: Some(CrossAlign::Stretch),
             },
-            text: "Click/tap the button to toggle accent color".to_string(),
-            style: LabelStyle {
-                font: REACTRON_THEME.font_label,
-                color: REACTRON_THEME.text_muted,
-            },
-        }),
         );
-        ui.push_key(
+        ui.push_key_with(
             "button_toggle_accent",
             Box::new(Button {
-            action: UiAction::ToggleAccent,
-            rect: Rect {
-                x: 0.0,
-                y: 0.0,
-                width: 440.0,
-                height: 60.0,
+                action: UiAction::ToggleAccent,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 408.0,
+                    height: 56.0,
+                },
+                label: "Reactron Button",
+                style: ButtonStyle {
+                    idle_fill: "#18233d",
+                    hover_fill: "#283960",
+                    pressed_fill: "#1f2a47",
+                    border: "#3d5387",
+                    text: REACTRON_THEME.text_primary,
+                    font: REACTRON_THEME.font_button,
+                },
+            }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(56.0),
+                align_self: Some(CrossAlign::Stretch),
             },
-            label: "Reactron Button",
-            style: ButtonStyle {
-                idle_fill: "#18233d",
-                hover_fill: "#283960",
-                pressed_fill: "#1f2a47",
-                border: "#3d5387",
-                text: REACTRON_THEME.text_primary,
-                font: REACTRON_THEME.font_button,
-            },
-        }),
         );
-        ui.push_key(
+        ui.push_key_with(
             KEY_TOGGLE_NEON,
             Box::new(Toggle {
                 rect: Rect {
                     x: 0.0,
                     y: 0.0,
-                    width: 440.0,
+                    width: 408.0,
                     height: 44.0,
                 },
                 value: true,
                 label: "Neon Mode",
                 style: ToggleStyle::default(),
             }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(44.0),
+                align_self: Some(CrossAlign::Stretch),
+            },
         );
 
         Self {
@@ -194,9 +233,9 @@ impl DemoApp {
 
         self.ui.set_area(Rect {
             x: width * 0.5 - 220.0,
-            y: height * 0.14,
+            y: height * 0.1,
             width: 440.0,
-            height: 420.0,
+            height: height * 0.8,
         });
 
         if let Some(hero) = self.ui.widget_mut_by_key::<TriangleHero>(KEY_TRIANGLE) {
@@ -213,6 +252,11 @@ impl DemoApp {
         }
 
         let events = self.ui.draw(context, &self.state.pointer);
+        if self.state.pointer.activate_primary {
+            // Basic keyboard accessibility: Enter/Space triggers primary action.
+            self.state.accent_on = !self.state.accent_on;
+            self.state.clicks += 1;
+        }
         for event in events {
             match event {
                 UiEvent::Action(UiAction::ToggleAccent) => {

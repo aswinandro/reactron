@@ -5,6 +5,7 @@ pub struct PointerState {
     pub is_down: bool,
     pub just_pressed: bool,
     pub just_released: bool,
+    pub activate_primary: bool,
 }
 
 pub enum PointerSignal {
@@ -12,6 +13,7 @@ pub enum PointerSignal {
     Down { x: f64, y: f64 },
     Up { x: f64, y: f64 },
     Leave,
+    ActivatePrimary,
 }
 
 impl PointerState {
@@ -43,12 +45,15 @@ impl PointerState {
                     self.just_released = true;
                 }
             }
+            PointerSignal::ActivatePrimary => {
+                self.activate_primary = true;
+            }
         }
     }
 
     pub fn reset_transient(&mut self) {
         self.just_pressed = false;
         self.just_released = false;
+        self.activate_primary = false;
     }
 }
-
