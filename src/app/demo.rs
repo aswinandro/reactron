@@ -10,6 +10,7 @@ use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::label::{Label, LabelStyle};
 use crate::widgets::list_view::{ListView, ListViewStyle};
 use crate::widgets::panel::{Panel, PanelStyle};
+use crate::widgets::select::{Select, SelectStyle};
 use crate::widgets::text_input::{TextInput, TextInputStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
 use crate::widgets::triangle_hero::TriangleHero;
@@ -22,6 +23,7 @@ pub struct DemoState {
     pub neon_mode: bool,
     pub clicks: u32,
     pub query: String,
+    pub preset: String,
     pub pointer: PointerState,
 }
 
@@ -37,6 +39,7 @@ const KEY_RESULTS_LIST: &str = "results_list";
 const KEY_CONTROLS_PANEL: &str = "controls_panel";
 const KEY_CTRL_QUERY: &str = "ctrl_query";
 const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
+const KEY_CTRL_PRESET: &str = "ctrl_preset";
 
 impl DemoApp {
     pub fn new() -> Self {
@@ -274,6 +277,33 @@ impl DemoApp {
                         },
                         3,
                     );
+                    row.push_key_with_order(
+                        KEY_CTRL_PRESET,
+                        Box::new(Select {
+                            key: "theme_preset",
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            options: vec![
+                                "Ocean".to_string(),
+                                "Sunset".to_string(),
+                                "Forest".to_string(),
+                            ],
+                            selected: 0,
+                            style: SelectStyle::default(),
+                            focused: false,
+                            label: "Preset",
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(1.0),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                        4,
+                    );
                     row
                 },
                 focused: false,
@@ -291,6 +321,7 @@ impl DemoApp {
                 accent_on: true,
                 neon_mode: true,
                 query: String::new(),
+                preset: "Ocean".to_string(),
                 ..DemoState::default()
             },
             ui,
@@ -310,10 +341,21 @@ impl DemoApp {
         let (width, height) = canvas2d::sync_canvas_resolution(canvas, dpr);
 
         canvas2d::clear(context, width, height, REACTRON_THEME.background);
+        let accent_primary = match self.state.preset.as_str() {
+            "Sunset" => "#ff7849",
+            "Forest" => "#43c06b",
+            _ => REACTRON_THEME.accent_primary,
+        };
+        let accent_secondary = match self.state.preset.as_str() {
+            "Sunset" => "#ffd166",
+            "Forest" => "#9be564",
+            _ => REACTRON_THEME.accent_secondary,
+        };
+
         let triangle_color = if self.state.accent_on {
-            REACTRON_THEME.accent_primary
+            accent_primary
         } else {
-            REACTRON_THEME.accent_secondary
+            accent_secondary
         };
         let hero_color = if self.state.neon_mode {
             triangle_color
@@ -339,8 +381,8 @@ impl DemoApp {
         }
         if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
             clicks_label.set_text(format!(
-                "Button clicks: {} | Query: {}",
-                self.state.clicks, self.state.query
+                "Clicks: {} | Query: {} | Preset: {}",
+                self.state.clicks, self.state.query, self.state.preset
             ));
         }
         if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
@@ -355,6 +397,9 @@ impl DemoApp {
             }
             if let Some(toggle) = panel.child_mut().widget_mut_by_key::<Toggle>(KEY_CTRL_TOGGLE_NEON) {
                 toggle.set_value(self.state.neon_mode);
+            }
+            if let Some(select) = panel.child_mut().widget_mut_by_key::<Select>(KEY_CTRL_PRESET) {
+                select.set_selected_by_value(&self.state.preset);
             }
         }
 
@@ -373,6 +418,12 @@ impl DemoApp {
                     value,
                 } => {
                     self.state.query = value;
+                }
+                UiEvent::ValueChanged {
+                    key: "theme_preset",
+                    value,
+                } => {
+                    self.state.preset = value;
                 }
                 UiEvent::ValueChanged { .. } => {}
             }

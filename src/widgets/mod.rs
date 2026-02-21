@@ -3,6 +3,7 @@ pub mod container;
 pub mod label;
 pub mod list_view;
 pub mod panel;
+pub mod select;
 pub mod text_input;
 pub mod toggle;
 pub mod triangle_hero;
