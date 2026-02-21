@@ -17,6 +17,13 @@ pub trait Widget {
     fn desired_size(&self) -> (f64, f64);
     fn set_rect(&mut self, rect: Rect);
     fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Option<UiEvent>;
+    fn focusable(&self) -> bool {
+        false
+    }
+    fn set_focused(&mut self, _focused: bool) {}
+    fn activate(&mut self) -> Option<UiEvent> {
+        None
+    }
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -93,6 +100,7 @@ pub struct UiTree {
     direction: LayoutDirection,
     padding: EdgeInsets,
     align_items: CrossAlign,
+    focus_index: Option<usize>,
 }
 
 impl UiTree {
@@ -104,6 +112,7 @@ impl UiTree {
             direction: LayoutDirection::Column,
             padding: EdgeInsets::all(0.0),
             align_items: CrossAlign::Stretch,
+            focus_index: None,
         }
     }
 
@@ -116,6 +125,7 @@ impl UiTree {
             direction: LayoutDirection::Row,
             padding: EdgeInsets::all(0.0),
             align_items: CrossAlign::Center,
+            focus_index: None,
         }
     }
 
@@ -128,6 +138,7 @@ impl UiTree {
             direction: LayoutDirection::Stack,
             padding: EdgeInsets::all(0.0),
             align_items: CrossAlign::Stretch,
+            focus_index: None,
         }
     }
 
@@ -192,6 +203,10 @@ impl UiTree {
             return Vec::new();
         }
 
+        if pointer.focus_next {
+            self.focus_next();
+        }
+
         match self.direction {
             LayoutDirection::Column => self.draw_column(context, pointer),
             LayoutDirection::Row => self.draw_row(context, pointer),
@@ -221,7 +236,8 @@ impl UiTree {
         let remaining = (inner.height - fixed_height - total_gap).max(0.0);
 
         let mut y = inner.y;
-        for entry in &mut self.widgets {
+        for (index, entry) in self.widgets.iter_mut().enumerate() {
+            entry.widget.set_focused(self.focus_index == Some(index));
             let (desired_w, desired_h) = entry.widget.desired_size();
             let height = match entry.layout.height {
                 SizeSpec::Fixed(h) => h.max(0.0),
@@ -266,6 +282,11 @@ impl UiTree {
             if let Some(event) = entry.widget.draw(context, pointer) {
                 events.push(event);
             }
+            if pointer.activate_primary && self.focus_index == Some(index) {
+                if let Some(event) = entry.widget.activate() {
+                    events.push(event);
+                }
+            }
             y += height + self.gap;
         }
 
@@ -296,7 +317,8 @@ impl UiTree {
         let remaining = (inner.width - fixed_width - total_gap).max(0.0);
 
         let mut x = inner.x;
-        for entry in &mut self.widgets {
+        for (index, entry) in self.widgets.iter_mut().enumerate() {
+            entry.widget.set_focused(self.focus_index == Some(index));
             let (desired_w, desired_h) = entry.widget.desired_size();
             let width = match entry.layout.width {
                 SizeSpec::Fixed(w) => w.max(0.0),
@@ -340,6 +362,11 @@ impl UiTree {
             if let Some(event) = entry.widget.draw(context, pointer) {
                 events.push(event);
             }
+            if pointer.activate_primary && self.focus_index == Some(index) {
+                if let Some(event) = entry.widget.activate() {
+                    events.push(event);
+                }
+            }
 
             x += width + self.gap;
         }
@@ -355,7 +382,8 @@ impl UiTree {
         let mut events = Vec::new();
         let inner = self.inner_area();
 
-        for entry in &mut self.widgets {
+        for (index, entry) in self.widgets.iter_mut().enumerate() {
+            entry.widget.set_focused(self.focus_index == Some(index));
             let (desired_w, desired_h) = entry.widget.desired_size();
             let width = match entry.layout.width {
                 SizeSpec::Fixed(w) => w.max(0.0).min(inner.width),
@@ -396,6 +424,11 @@ impl UiTree {
             if let Some(event) = entry.widget.draw(context, pointer) {
                 events.push(event);
             }
+            if pointer.activate_primary && self.focus_index == Some(index) {
+                if let Some(event) = entry.widget.activate() {
+                    events.push(event);
+                }
+            }
         }
 
         events
@@ -411,6 +444,26 @@ impl UiTree {
             y,
             width,
             height,
+        }
+    }
+
+    fn focus_next(&mut self) {
+        if self.widgets.is_empty() {
+            self.focus_index = None;
+            return;
+        }
+
+        let start = match self.focus_index {
+            Some(index) => index + 1,
+            None => 0,
+        };
+
+        for offset in 0..self.widgets.len() {
+            let index = (start + offset) % self.widgets.len();
+            if self.widgets[index].widget.focusable() {
+                self.focus_index = Some(index);
+                return;
+            }
         }
     }
 }

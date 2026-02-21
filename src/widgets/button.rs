@@ -9,6 +9,7 @@ pub struct Button {
     pub rect: Rect,
     pub label: &'static str,
     pub style: ButtonStyle,
+    pub focused: bool,
 }
 
 pub struct ButtonStyle {
@@ -16,6 +17,7 @@ pub struct ButtonStyle {
     pub hover_fill: &'static str,
     pub pressed_fill: &'static str,
     pub border: &'static str,
+    pub focus_border: &'static str,
     pub text: &'static str,
     pub font: &'static str,
 }
@@ -27,6 +29,7 @@ impl Default for ButtonStyle {
             hover_fill: "#283960",
             pressed_fill: "#1f2a47",
             border: "#3d5387",
+            focus_border: "#27ffd8",
             text: "#d8e3ff",
             font: "600 22px Consolas",
         }
@@ -58,7 +61,12 @@ impl Button {
         context.set_fill_style_str(fill);
         context.fill_rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height);
 
-        context.set_stroke_style_str(self.style.border);
+        let border = if self.focused {
+            self.style.focus_border
+        } else {
+            self.style.border
+        };
+        context.set_stroke_style_str(border);
         context.set_line_width(2.0);
         context.stroke_rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height);
 
@@ -92,6 +100,18 @@ impl Widget for Button {
         } else {
             None
         }
+    }
+
+    fn focusable(&self) -> bool {
+        true
+    }
+
+    fn set_focused(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    fn activate(&mut self) -> Option<UiEvent> {
+        Some(UiEvent::Action(self.action))
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {

@@ -44,6 +44,14 @@ pub fn start() -> Result<(), JsValue> {
                     &window_ref,
                     PointerSignal::ActivatePrimary,
                 );
+            } else if key == "Tab" {
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::FocusNext,
+                );
             }
         });
         window.add_event_listener_with_callback("keydown", on_keydown.as_ref().unchecked_ref())?;

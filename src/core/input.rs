@@ -6,6 +6,7 @@ pub struct PointerState {
     pub just_pressed: bool,
     pub just_released: bool,
     pub activate_primary: bool,
+    pub focus_next: bool,
 }
 
 pub enum PointerSignal {
@@ -14,6 +15,7 @@ pub enum PointerSignal {
     Up { x: f64, y: f64 },
     Leave,
     ActivatePrimary,
+    FocusNext,
 }
 
 impl PointerState {
@@ -48,6 +50,9 @@ impl PointerState {
             PointerSignal::ActivatePrimary => {
                 self.activate_primary = true;
             }
+            PointerSignal::FocusNext => {
+                self.focus_next = true;
+            }
         }
     }
 
@@ -55,5 +60,6 @@ impl PointerState {
         self.just_pressed = false;
         self.just_released = false;
         self.activate_primary = false;
+        self.focus_next = false;
     }
 }

@@ -9,6 +9,7 @@ pub struct Toggle {
     pub value: bool,
     pub label: &'static str,
     pub style: ToggleStyle,
+    pub focused: bool,
 }
 
 pub struct ToggleStyle {
@@ -16,6 +17,7 @@ pub struct ToggleStyle {
     pub off_fill: &'static str,
     pub knob_fill: &'static str,
     pub text_fill: &'static str,
+    pub focus_border: &'static str,
     pub font: &'static str,
 }
 
@@ -26,6 +28,7 @@ impl Default for ToggleStyle {
             off_fill: "#2d344a",
             knob_fill: "#d8e3ff",
             text_fill: "#d8e3ff",
+            focus_border: "#27ffd8",
             font: "600 15px Consolas",
         }
     }
@@ -70,6 +73,11 @@ impl Widget for Toggle {
             self.style.off_fill
         });
         context.fill_rect(track_x, track_y, track_width, track_height);
+        if self.focused {
+            context.set_stroke_style_str(self.style.focus_border);
+            context.set_line_width(2.0);
+            context.stroke_rect(track_x, track_y, track_width, track_height);
+        }
 
         let knob_size = 24.0;
         let knob_x = if self.value {
@@ -88,8 +96,20 @@ impl Widget for Toggle {
         }
     }
 
+    fn focusable(&self) -> bool {
+        true
+    }
+
+    fn set_focused(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    fn activate(&mut self) -> Option<UiEvent> {
+        self.value = !self.value;
+        Some(UiEvent::Action(UiAction::SetNeon(self.value)))
+    }
+
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
-

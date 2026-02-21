@@ -161,9 +161,11 @@ impl DemoApp {
                     hover_fill: "#283960",
                     pressed_fill: "#1f2a47",
                     border: "#3d5387",
+                    focus_border: "#27ffd8",
                     text: REACTRON_THEME.text_primary,
                     font: REACTRON_THEME.font_button,
                 },
+                focused: false,
             }),
             LayoutProps {
                 width: SizeSpec::Flex(1.0),
@@ -183,6 +185,7 @@ impl DemoApp {
                 value: true,
                 label: "Neon Mode",
                 style: ToggleStyle::default(),
+                focused: false,
             }),
             LayoutProps {
                 width: SizeSpec::Flex(1.0),
@@ -228,7 +231,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Click/tap the button to toggle accent color"
+            "Click/tap to interact, Tab to focus controls, Enter to activate"
         };
 
         self.ui.set_area(Rect {
@@ -252,11 +255,6 @@ impl DemoApp {
         }
 
         let events = self.ui.draw(context, &self.state.pointer);
-        if self.state.pointer.activate_primary {
-            // Basic keyboard accessibility: Enter/Space triggers primary action.
-            self.state.accent_on = !self.state.accent_on;
-            self.state.clicks += 1;
-        }
         for event in events {
             match event {
                 UiEvent::Action(UiAction::ToggleAccent) => {
