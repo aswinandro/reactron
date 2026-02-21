@@ -12,8 +12,14 @@ pub struct PointerState {
     pub delete_forward: bool,
     pub move_left: bool,
     pub move_right: bool,
+    pub move_left_select: bool,
+    pub move_right_select: bool,
+    pub move_up: bool,
+    pub move_down: bool,
     pub move_home: bool,
     pub move_end: bool,
+    pub select_all: bool,
+    pub cancel: bool,
     pub scroll_y: f64,
 }
 
@@ -29,8 +35,14 @@ pub enum PointerSignal {
     DeleteForward,
     MoveLeft,
     MoveRight,
+    MoveLeftSelect,
+    MoveRightSelect,
+    MoveUp,
+    MoveDown,
     MoveHome,
     MoveEnd,
+    SelectAll,
+    Cancel,
     Scroll { x: f64, y: f64, delta_y: f64 },
 }
 
@@ -84,11 +96,29 @@ impl PointerState {
             PointerSignal::MoveRight => {
                 self.move_right = true;
             }
+            PointerSignal::MoveLeftSelect => {
+                self.move_left_select = true;
+            }
+            PointerSignal::MoveRightSelect => {
+                self.move_right_select = true;
+            }
+            PointerSignal::MoveUp => {
+                self.move_up = true;
+            }
+            PointerSignal::MoveDown => {
+                self.move_down = true;
+            }
             PointerSignal::MoveHome => {
                 self.move_home = true;
             }
             PointerSignal::MoveEnd => {
                 self.move_end = true;
+            }
+            PointerSignal::SelectAll => {
+                self.select_all = true;
+            }
+            PointerSignal::Cancel => {
+                self.cancel = true;
             }
             PointerSignal::Scroll { x, y, delta_y } => {
                 self.x = x;
@@ -108,8 +138,14 @@ impl PointerState {
         self.delete_forward = false;
         self.move_left = false;
         self.move_right = false;
+        self.move_left_select = false;
+        self.move_right_select = false;
+        self.move_up = false;
+        self.move_down = false;
         self.move_home = false;
         self.move_end = false;
+        self.select_all = false;
+        self.cancel = false;
         self.scroll_y = 0.0;
     }
 }

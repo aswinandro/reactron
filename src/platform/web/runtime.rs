@@ -36,6 +36,17 @@ pub fn start() -> Result<(), JsValue> {
         let window_ref = window.clone();
         let on_keydown = Closure::<dyn FnMut(_)>::new(move |event: KeyboardEvent| {
             let key = event.key();
+            if (event.ctrl_key() || event.meta_key()) && key.eq_ignore_ascii_case("a") {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::SelectAll,
+                );
+                return;
+            }
             if key == "Enter" || key == " " {
                 event.prevent_default();
                 dispatch_and_render(
@@ -79,7 +90,11 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    PointerSignal::MoveLeft,
+                    if event.shift_key() {
+                        PointerSignal::MoveLeftSelect
+                    } else {
+                        PointerSignal::MoveLeft
+                    },
                 );
             } else if key == "ArrowRight" {
                 event.prevent_default();
@@ -88,7 +103,29 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    PointerSignal::MoveRight,
+                    if event.shift_key() {
+                        PointerSignal::MoveRightSelect
+                    } else {
+                        PointerSignal::MoveRight
+                    },
+                );
+            } else if key == "ArrowUp" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MoveUp,
+                );
+            } else if key == "ArrowDown" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::MoveDown,
                 );
             } else if key == "Home" {
                 event.prevent_default();
@@ -107,6 +144,15 @@ pub fn start() -> Result<(), JsValue> {
                     &canvas_ref,
                     &window_ref,
                     PointerSignal::MoveEnd,
+                );
+            } else if key == "Escape" {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::Cancel,
                 );
             } else if key.len() == 1 && !event.ctrl_key() && !event.meta_key() {
                 dispatch_and_render(

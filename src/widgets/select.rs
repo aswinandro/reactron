@@ -12,6 +12,7 @@ pub struct Select {
     pub style: SelectStyle,
     pub focused: bool,
     pub open: bool,
+    pub highlighted: usize,
     pub label: &'static str,
 }
 
@@ -45,6 +46,7 @@ impl Select {
     pub fn set_selected_by_value(&mut self, value: &str) {
         if let Some(index) = self.options.iter().position(|option| option == value) {
             self.selected = index;
+            self.highlighted = index;
         }
     }
 
@@ -79,6 +81,10 @@ impl Select {
             key: self.key,
             value: self.selected_value(),
         })
+    }
+
+    fn set_highlight_from_selected(&mut self) {
+        self.highlighted = self.selected.min(self.options.len().saturating_sub(1));
     }
 
     fn dropdown_rect(&self) -> Rect {
@@ -123,17 +129,33 @@ impl Widget for Select {
                     events.push(event);
                 }
             }
+        } else if self.focused && self.open {
+            if pointer.move_up && !self.options.is_empty() {
+                self.highlighted = if self.highlighted == 0 {
+                    self.options.len() - 1
+                } else {
+                    self.highlighted - 1
+                };
+            } else if pointer.move_down && !self.options.is_empty() {
+                self.highlighted = (self.highlighted + 1) % self.options.len();
+            } else if pointer.cancel {
+                self.open = false;
+            }
         }
 
         if pointer.just_released {
             if hovered {
                 self.open = !self.open;
+                if self.open {
+                    self.set_highlight_from_selected();
+                }
             } else if self.open {
                 let mut clicked_option = false;
                 for (index, _) in self.options.iter().enumerate() {
                     let option_rect = self.option_rect(index);
                     if option_rect.contains(pointer.x, pointer.y) {
                         self.selected = index;
+                        self.highlighted = index;
                         events.push(UiEvent::ValueChanged {
                             key: self.key,
                             value: self.selected_value(),
@@ -191,7 +213,7 @@ impl Widget for Select {
             for (index, option) in self.options.iter().enumerate() {
                 let option_rect = self.option_rect(index);
                 let option_hovered = option_rect.contains(pointer.x, pointer.y);
-                if option_hovered || index == self.selected {
+                if option_hovered || index == self.highlighted {
                     context.set_fill_style_str(self.style.option_hover_fill);
                     context.fill_rect(
                         option_rect.x,
@@ -225,6 +247,9 @@ impl Widget for Select {
 
     fn activate(&mut self) -> Option<UiEvent> {
         if self.open {
+            if !self.options.is_empty() {
+                self.selected = self.highlighted.min(self.options.len() - 1);
+            }
             self.open = false;
             Some(UiEvent::ValueChanged {
                 key: self.key,
@@ -232,6 +257,7 @@ impl Widget for Select {
             })
         } else {
             self.open = true;
+            self.set_highlight_from_selected();
             None
         }
     }

@@ -12,6 +12,7 @@ pub struct TextInput {
     pub style: TextInputStyle,
     pub focused: bool,
     pub cursor: usize,
+    pub selection_anchor: Option<usize>,
 }
 
 pub struct TextInputStyle {
@@ -71,6 +72,51 @@ impl TextInput {
                 .unwrap_or(self.value.len())
         }
     }
+
+    fn selection_range(&self) -> Option<(usize, usize)> {
+        self.selection_anchor.and_then(|anchor| {
+            if anchor == self.cursor {
+                None
+            } else if anchor < self.cursor {
+                Some((anchor, self.cursor))
+            } else {
+                Some((self.cursor, anchor))
+            }
+        })
+    }
+
+    fn clear_selection(&mut self) {
+        self.selection_anchor = None;
+    }
+
+    fn delete_selection_if_any(&mut self) -> bool {
+        if let Some((start, end)) = self.selection_range() {
+            self.value.replace_range(start..end, "");
+            self.cursor = start;
+            self.clear_selection();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn set_cursor_from_x(&mut self, context: &CanvasRenderingContext2d, x: f64) {
+        let mut best = 0usize;
+        let mut best_distance = f64::MAX;
+        for index in self.value.char_indices().map(|(i, _)| i).chain(std::iter::once(self.value.len())) {
+            let width = context
+                .measure_text(&self.value[..index])
+                .ok()
+                .map(|metrics| metrics.width())
+                .unwrap_or(0.0);
+            let distance = (width - x).abs();
+            if distance < best_distance {
+                best_distance = distance;
+                best = index;
+            }
+        }
+        self.cursor = best;
+    }
 }
 
 impl Widget for TextInput {
@@ -86,20 +132,53 @@ impl Widget for TextInput {
         let mut events = Vec::new();
 
         if self.focused {
+            if pointer.select_all {
+                self.selection_anchor = Some(0);
+                self.cursor = self.value.len();
+            }
+
+            if pointer.just_released && self.rect.contains(pointer.x, pointer.y) {
+                context.set_font(self.style.font);
+                let text_x = self.rect.x + self.style.padding_x;
+                self.set_cursor_from_x(context, (pointer.x - text_x).max(0.0));
+                self.clear_selection();
+            }
+
             if pointer.move_home {
                 self.cursor = 0;
+                self.clear_selection();
             }
             if pointer.move_end {
                 self.cursor = self.value.len();
+                self.clear_selection();
+            }
+            if pointer.move_left_select {
+                if self.selection_anchor.is_none() {
+                    self.selection_anchor = Some(self.cursor);
+                }
+                self.cursor = self.prev_char_boundary();
+            }
+            if pointer.move_right_select {
+                if self.selection_anchor.is_none() {
+                    self.selection_anchor = Some(self.cursor);
+                }
+                self.cursor = self.next_char_boundary();
             }
             if pointer.move_left {
                 self.cursor = self.prev_char_boundary();
+                self.clear_selection();
             }
             if pointer.move_right {
                 self.cursor = self.next_char_boundary();
+                self.clear_selection();
             }
             if pointer.backspace {
-                if self.cursor > 0 {
+                if self.delete_selection_if_any() {
+                    events.push(UiEvent::ValueChanged {
+                        key: self.key,
+                        value: self.value.clone(),
+                    });
+                } else if self.cursor > 0 {
                     let start = self.prev_char_boundary();
                     self.value.replace_range(start..self.cursor, "");
                     self.cursor = start;
@@ -110,7 +189,12 @@ impl Widget for TextInput {
                 }
             }
             if pointer.delete_forward {
-                if self.cursor < self.value.len() {
+                if self.delete_selection_if_any() {
+                    events.push(UiEvent::ValueChanged {
+                        key: self.key,
+                        value: self.value.clone(),
+                    });
+                } else if self.cursor < self.value.len() {
                     let end = self.next_char_boundary();
                     self.value.replace_range(self.cursor..end, "");
                     events.push(UiEvent::ValueChanged {
@@ -120,8 +204,10 @@ impl Widget for TextInput {
                 }
             }
             if let Some(input) = &pointer.text_input {
+                let _ = self.delete_selection_if_any();
                 self.value.insert_str(self.cursor, input);
                 self.cursor += input.len();
+                self.clear_selection();
                 events.push(UiEvent::ValueChanged {
                     key: self.key,
                     value: self.value.clone(),
@@ -156,6 +242,28 @@ impl Widget for TextInput {
         }
 
         if self.focused {
+            if let Some((start, end)) = self.selection_range() {
+                let start_width = context
+                    .measure_text(&self.value[..start])
+                    .ok()
+                    .map(|metrics| metrics.width())
+                    .unwrap_or(0.0);
+                let end_width = context
+                    .measure_text(&self.value[..end])
+                    .ok()
+                    .map(|metrics| metrics.width())
+                    .unwrap_or(start_width);
+                context.set_fill_style_str("rgba(39,255,216,0.28)");
+                context.fill_rect(
+                    text_x + start_width,
+                    self.rect.y + 7.0,
+                    (end_width - start_width).max(0.0),
+                    (self.rect.height - 14.0).max(0.0),
+                );
+                context.set_fill_style_str(self.style.text);
+                let _ = context.fill_text(&self.value, text_x, text_y);
+            }
+
             let before_cursor = &self.value[..self.cursor.min(self.value.len())];
             let width = context
                 .measure_text(before_cursor)
@@ -182,6 +290,9 @@ impl Widget for TextInput {
 
     fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
+        if !focused {
+            self.clear_selection();
+        }
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {

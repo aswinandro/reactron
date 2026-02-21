@@ -219,6 +219,7 @@ impl DemoApp {
                             style: TextInputStyle::default(),
                             focused: false,
                             cursor: 0,
+                            selection_anchor: None,
                         }),
                         LayoutProps {
                             width: SizeSpec::Flex(2.0),
@@ -296,6 +297,7 @@ impl DemoApp {
                             style: SelectStyle::default(),
                             focused: false,
                             open: false,
+                            highlighted: 0,
                             label: "Preset",
                         }),
                         LayoutProps {
@@ -367,7 +369,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Tab focus, type, arrows/Home/End move cursor, Enter/Space activate"
+            "Tab focus | Shift+Arrows/Ctrl+A select text | Up/Down/Esc for Select"
         };
 
         self.ui.set_area(Rect {
