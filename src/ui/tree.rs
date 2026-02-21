@@ -28,6 +28,9 @@ pub trait Widget {
     fn activate(&mut self) -> Option<UiEvent> {
         None
     }
+    fn focus_next_in_children(&mut self) -> bool {
+        false
+    }
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -95,6 +98,7 @@ struct WidgetEntry {
     key: &'static str,
     widget: Box<dyn Widget>,
     layout: LayoutProps,
+    focus_order: i32,
 }
 
 pub struct UiTree {
@@ -152,6 +156,7 @@ impl UiTree {
             key: "",
             widget,
             layout: LayoutProps::auto(),
+            focus_order: i32::MAX,
         });
     }
 
@@ -161,6 +166,7 @@ impl UiTree {
             key,
             widget,
             layout: LayoutProps::auto(),
+            focus_order: i32::MAX,
         });
     }
 
@@ -169,6 +175,22 @@ impl UiTree {
             key,
             widget,
             layout,
+            focus_order: i32::MAX,
+        });
+    }
+
+    pub fn push_key_with_order(
+        &mut self,
+        key: &'static str,
+        widget: Box<dyn Widget>,
+        layout: LayoutProps,
+        focus_order: i32,
+    ) {
+        self.widgets.push(WidgetEntry {
+            key,
+            widget,
+            layout,
+            focus_order,
         });
     }
 
@@ -207,7 +229,7 @@ impl UiTree {
             return Vec::new();
         }
 
-        if pointer.focus_next {
+        if pointer.focus_next && !self.focus_next_in_focused_child() {
             self.focus_next();
         }
 
@@ -445,23 +467,42 @@ impl UiTree {
         }
     }
 
-    fn focus_next(&mut self) {
+    pub fn focus_next(&mut self) -> bool {
         if self.widgets.is_empty() {
             self.focus_index = None;
-            return;
+            return false;
         }
 
-        let start = match self.focus_index {
-            Some(index) => index + 1,
-            None => 0,
-        };
+        let mut ordered = self
+            .widgets
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| entry.widget.focusable())
+            .map(|(index, entry)| (entry.focus_order, index))
+            .collect::<Vec<_>>();
+        if ordered.is_empty() {
+            self.focus_index = None;
+            return false;
+        }
 
-        for offset in 0..self.widgets.len() {
-            let index = (start + offset) % self.widgets.len();
-            if self.widgets[index].widget.focusable() {
-                self.focus_index = Some(index);
-                return;
-            }
+        ordered.sort_by(|(a_order, a_index), (b_order, b_index)| {
+            a_order.cmp(b_order).then(a_index.cmp(b_index))
+        });
+
+        let current = self.focus_index;
+        let next_pos = ordered
+            .iter()
+            .position(|(_, index)| Some(*index) == current)
+            .map(|pos| (pos + 1) % ordered.len())
+            .unwrap_or(0);
+        self.focus_index = Some(ordered[next_pos].1);
+        true
+    }
+
+    pub fn focus_next_in_focused_child(&mut self) -> bool {
+        match self.focus_index {
+            Some(index) => self.widgets[index].widget.focus_next_in_children(),
+            None => false,
         }
     }
 }

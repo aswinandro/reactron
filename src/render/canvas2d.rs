@@ -18,6 +18,14 @@ pub fn sync_canvas_resolution(canvas: &HtmlCanvasElement, dpr: f64) -> (f64, f64
 }
 
 pub fn pointer_position_in_canvas(event: &PointerEvent, canvas: &HtmlCanvasElement) -> (f64, f64) {
+    client_position_in_canvas(f64::from(event.client_x()), f64::from(event.client_y()), canvas)
+}
+
+pub fn client_position_in_canvas(
+    client_x: f64,
+    client_y: f64,
+    canvas: &HtmlCanvasElement,
+) -> (f64, f64) {
     let rect = canvas.get_bounding_client_rect();
     let scale_x = if rect.width() > 0.0 {
         f64::from(canvas.width()) / rect.width()
@@ -30,8 +38,8 @@ pub fn pointer_position_in_canvas(event: &PointerEvent, canvas: &HtmlCanvasEleme
         1.0
     };
 
-    let x = (f64::from(event.client_x()) - rect.left()) * scale_x;
-    let y = (f64::from(event.client_y()) - rect.top()) * scale_y;
+    let x = (client_x - rect.left()) * scale_x;
+    let y = (client_y - rect.top()) * scale_y;
     (x, y)
 }
 

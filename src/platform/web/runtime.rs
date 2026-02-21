@@ -6,7 +6,7 @@ use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, PointerEvent, Window};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, PointerEvent, WheelEvent, Window};
 
 pub fn start() -> Result<(), JsValue> {
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("window not available"))?;
@@ -151,6 +151,34 @@ pub fn start() -> Result<(), JsValue> {
         });
         canvas.add_event_listener_with_callback("pointerleave", on_leave.as_ref().unchecked_ref())?;
         on_leave.forget();
+    }
+
+    {
+        let app_ref = Rc::clone(&app);
+        let context_ref = context.clone();
+        let canvas_ref = canvas.clone();
+        let window_ref = window.clone();
+        let on_wheel = Closure::<dyn FnMut(_)>::new(move |event: WheelEvent| {
+            event.prevent_default();
+            let (x, y) = canvas2d::client_position_in_canvas(
+                f64::from(event.client_x()),
+                f64::from(event.client_y()),
+                &canvas_ref,
+            );
+            dispatch_and_render(
+                &app_ref,
+                &context_ref,
+                &canvas_ref,
+                &window_ref,
+                PointerSignal::Scroll {
+                    x,
+                    y,
+                    delta_y: event.delta_y(),
+                },
+            );
+        });
+        canvas.add_event_listener_with_callback("wheel", on_wheel.as_ref().unchecked_ref())?;
+        on_wheel.forget();
     }
 
     Ok(())

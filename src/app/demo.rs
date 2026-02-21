@@ -8,6 +8,7 @@ use crate::ui::tree::{
 use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::label::{Label, LabelStyle};
+use crate::widgets::list_view::{ListView, ListViewStyle};
 use crate::widgets::panel::{Panel, PanelStyle};
 use crate::widgets::text_input::{TextInput, TextInputStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
@@ -32,6 +33,7 @@ pub struct DemoApp {
 const KEY_TRIANGLE: &str = "triangle_hero";
 const KEY_CLICK_LABEL: &str = "clicks_label";
 const KEY_HINT_LABEL: &str = "hint_label";
+const KEY_RESULTS_LIST: &str = "results_list";
 const KEY_CONTROLS_PANEL: &str = "controls_panel";
 const KEY_CTRL_QUERY: &str = "ctrl_query";
 const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
@@ -150,7 +152,29 @@ impl DemoApp {
                 align_self: Some(CrossAlign::Stretch),
             },
         );
-        ui.push_key_with(
+        ui.push_key_with_order(
+            KEY_RESULTS_LIST,
+            Box::new(ListView {
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 408.0,
+                    height: 190.0,
+                },
+                items: make_demo_items(""),
+                row_height: 28.0,
+                scroll_offset: 0.0,
+                style: ListViewStyle::default(),
+                focused: false,
+            }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(190.0),
+                align_self: Some(CrossAlign::Stretch),
+            },
+            1,
+        );
+        ui.push_key_with_order(
             KEY_CONTROLS_PANEL,
             Box::new(Panel {
                 rect: Rect {
@@ -162,6 +186,7 @@ impl DemoApp {
                 style: PanelStyle {
                     fill: "#0d1324",
                     border: "#2a3350",
+                    focus_border: "#27ffd8",
                     border_width: 1.0,
                 },
                 padding: EdgeInsets::all(10.0),
@@ -176,7 +201,7 @@ impl DemoApp {
                         10.0,
                     );
                     row.set_align_items(CrossAlign::Center);
-                    row.push_key_with(
+                    row.push_key_with_order(
                         KEY_CTRL_QUERY,
                         Box::new(TextInput {
                             key: "search_query",
@@ -196,8 +221,9 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
+                        1,
                     );
-                    row.push_key_with(
+                    row.push_key_with_order(
                         "ctrl_button_toggle_accent",
                         Box::new(Button {
                             action: UiAction::ToggleAccent,
@@ -224,8 +250,9 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
+                        2,
                     );
-                    row.push_key_with(
+                    row.push_key_with_order(
                         KEY_CTRL_TOGGLE_NEON,
                         Box::new(Toggle {
                             rect: Rect {
@@ -244,15 +271,18 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
+                        3,
                     );
                     row
                 },
+                focused: false,
             }),
             LayoutProps {
                 width: SizeSpec::Flex(1.0),
                 height: SizeSpec::Fixed(64.0),
                 align_self: Some(CrossAlign::Stretch),
             },
+            2,
         );
 
         Self {
@@ -315,6 +345,9 @@ impl DemoApp {
         if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
             hint_label.set_text(interaction_text.to_string());
         }
+        if let Some(list) = self.ui.widget_mut_by_key::<ListView>(KEY_RESULTS_LIST) {
+            list.set_items(make_demo_items(&self.state.query));
+        }
         if let Some(panel) = self.ui.widget_mut_by_key::<Panel>(KEY_CONTROLS_PANEL) {
             if let Some(input) = panel.child_mut().widget_mut_by_key::<TextInput>(KEY_CTRL_QUERY) {
                 input.set_value(self.state.query.clone());
@@ -347,4 +380,20 @@ impl DemoApp {
         self.state.pointer.reset_transient();
         Ok(())
     }
+}
+
+fn make_demo_items(query: &str) -> Vec<String> {
+    let items = (1..=120)
+        .map(|index| format!("Widget Item {:03}", index))
+        .collect::<Vec<_>>();
+
+    if query.is_empty() {
+        return items;
+    }
+
+    let query_lower = query.to_lowercase();
+    items
+        .into_iter()
+        .filter(|item| item.to_lowercase().contains(&query_lower))
+        .collect()
 }

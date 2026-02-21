@@ -9,11 +9,13 @@ pub struct Panel {
     pub style: PanelStyle,
     pub padding: EdgeInsets,
     pub child: UiTree,
+    pub focused: bool,
 }
 
 pub struct PanelStyle {
     pub fill: &'static str,
     pub border: &'static str,
+    pub focus_border: &'static str,
     pub border_width: f64,
 }
 
@@ -37,7 +39,11 @@ impl Widget for Panel {
         context.fill_rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height);
 
         if self.style.border_width > 0.0 {
-            context.set_stroke_style_str(self.style.border);
+            context.set_stroke_style_str(if self.focused {
+                self.style.focus_border
+            } else {
+                self.style.border
+            });
             context.set_line_width(self.style.border_width);
             context.stroke_rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height);
         }
@@ -49,11 +55,31 @@ impl Widget for Panel {
             height: (self.rect.height - self.padding.top - self.padding.bottom).max(0.0),
         };
         self.child.set_area(child_area);
-        self.child.draw(context, pointer)
+
+        let mut child_pointer = pointer.clone();
+        if !self.focused {
+            child_pointer.activate_primary = false;
+            child_pointer.focus_next = false;
+            child_pointer.text_input = None;
+            child_pointer.backspace = false;
+        }
+
+        self.child.draw(context, &child_pointer)
+    }
+
+    fn focusable(&self) -> bool {
+        true
+    }
+
+    fn set_focused(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    fn focus_next_in_children(&mut self) -> bool {
+        self.child.focus_next()
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
-

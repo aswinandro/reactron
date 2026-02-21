@@ -9,6 +9,7 @@ pub struct PointerState {
     pub focus_next: bool,
     pub text_input: Option<String>,
     pub backspace: bool,
+    pub scroll_y: f64,
 }
 
 pub enum PointerSignal {
@@ -20,6 +21,7 @@ pub enum PointerSignal {
     FocusNext,
     TextInput(String),
     Backspace,
+    Scroll { x: f64, y: f64, delta_y: f64 },
 }
 
 impl PointerState {
@@ -63,6 +65,11 @@ impl PointerState {
             PointerSignal::Backspace => {
                 self.backspace = true;
             }
+            PointerSignal::Scroll { x, y, delta_y } => {
+                self.x = x;
+                self.y = y;
+                self.scroll_y += delta_y;
+            }
         }
     }
 
@@ -73,5 +80,6 @@ impl PointerState {
         self.focus_next = false;
         self.text_input = None;
         self.backspace = false;
+        self.scroll_y = 0.0;
     }
 }
