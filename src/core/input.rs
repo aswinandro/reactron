@@ -7,6 +7,7 @@ pub struct PointerState {
     pub just_released: bool,
     pub activate_primary: bool,
     pub focus_next: bool,
+    pub focus_prev: bool,
     pub text_input: Option<String>,
     pub backspace: bool,
     pub delete_forward: bool,
@@ -39,6 +40,7 @@ pub enum PointerSignal {
     Leave,
     ActivatePrimary,
     FocusNext,
+    FocusPrev,
     TextInput(String),
     Backspace,
     DeleteForward,
@@ -98,6 +100,9 @@ impl PointerState {
             }
             PointerSignal::FocusNext => {
                 self.focus_next = true;
+            }
+            PointerSignal::FocusPrev => {
+                self.focus_prev = true;
             }
             PointerSignal::TextInput(value) => {
                 self.text_input = Some(value);
@@ -178,6 +183,7 @@ impl PointerState {
         self.just_released = false;
         self.activate_primary = false;
         self.focus_next = false;
+        self.focus_prev = false;
         self.text_input = None;
         self.backspace = false;
         self.delete_forward = false;

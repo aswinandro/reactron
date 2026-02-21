@@ -60,13 +60,29 @@ impl Widget for Panel {
         if !self.focused {
             child_pointer.activate_primary = false;
             child_pointer.focus_next = false;
+            child_pointer.focus_prev = false;
             child_pointer.text_input = None;
             child_pointer.backspace = false;
             child_pointer.delete_forward = false;
             child_pointer.move_left = false;
             child_pointer.move_right = false;
+            child_pointer.move_left_select = false;
+            child_pointer.move_right_select = false;
+            child_pointer.move_word_left = false;
+            child_pointer.move_word_right = false;
+            child_pointer.move_word_left_select = false;
+            child_pointer.move_word_right_select = false;
+            child_pointer.move_up = false;
+            child_pointer.move_down = false;
+            child_pointer.move_page_up = false;
+            child_pointer.move_page_down = false;
             child_pointer.move_home = false;
             child_pointer.move_end = false;
+            child_pointer.select_all = false;
+            child_pointer.copy = false;
+            child_pointer.cut = false;
+            child_pointer.paste = false;
+            child_pointer.cancel = false;
         }
 
         self.child.draw(context, &child_pointer)
@@ -82,6 +98,10 @@ impl Widget for Panel {
 
     fn focus_next_in_children(&mut self) -> bool {
         self.child.focus_next()
+    }
+
+    fn focus_prev_in_children(&mut self) -> bool {
+        self.child.focus_prev()
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {

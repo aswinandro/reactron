@@ -104,6 +104,26 @@ impl Select {
             height: self.style.option_height,
         }
     }
+
+    fn jump_to_option(&mut self, needle: &str) -> Option<UiEvent> {
+        if needle.is_empty() || self.options.is_empty() {
+            return None;
+        }
+        let query = needle.to_lowercase();
+        let start = self.selected + 1;
+        for offset in 0..self.options.len() {
+            let index = (start + offset) % self.options.len();
+            if self.options[index].to_lowercase().starts_with(&query) {
+                self.selected = index;
+                self.highlighted = index;
+                return Some(UiEvent::ValueChanged {
+                    key: self.key,
+                    value: self.selected_value(),
+                });
+            }
+        }
+        None
+    }
 }
 
 impl Widget for Select {
@@ -126,6 +146,20 @@ impl Widget for Select {
                 }
             } else if pointer.move_right {
                 if let Some(event) = self.step_next() {
+                    events.push(event);
+                }
+            } else if pointer.move_up {
+                if let Some(event) = self.step_prev() {
+                    events.push(event);
+                }
+            } else if pointer.move_down {
+                if let Some(event) = self.step_next() {
+                    events.push(event);
+                }
+            }
+
+            if let Some(input) = &pointer.text_input {
+                if let Some(event) = self.jump_to_option(input) {
                     events.push(event);
                 }
             }

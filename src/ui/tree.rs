@@ -31,6 +31,9 @@ pub trait Widget {
     fn focus_next_in_children(&mut self) -> bool {
         false
     }
+    fn focus_prev_in_children(&mut self) -> bool {
+        false
+    }
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -231,6 +234,8 @@ impl UiTree {
 
         if pointer.focus_next && !self.focus_next_in_focused_child() {
             self.focus_next();
+        } else if pointer.focus_prev && !self.focus_prev_in_focused_child() {
+            self.focus_prev();
         }
 
         match self.direction {
@@ -519,9 +524,48 @@ impl UiTree {
         true
     }
 
+    pub fn focus_prev(&mut self) -> bool {
+        if self.widgets.is_empty() {
+            self.focus_index = None;
+            return false;
+        }
+
+        let mut ordered = self
+            .widgets
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| entry.widget.focusable())
+            .map(|(index, entry)| (entry.focus_order, index))
+            .collect::<Vec<_>>();
+        if ordered.is_empty() {
+            self.focus_index = None;
+            return false;
+        }
+
+        ordered.sort_by(|(a_order, a_index), (b_order, b_index)| {
+            a_order.cmp(b_order).then(a_index.cmp(b_index))
+        });
+
+        let current = self.focus_index;
+        let prev_pos = ordered
+            .iter()
+            .position(|(_, index)| Some(*index) == current)
+            .map(|pos| if pos == 0 { ordered.len() - 1 } else { pos - 1 })
+            .unwrap_or(ordered.len() - 1);
+        self.focus_index = Some(ordered[prev_pos].1);
+        true
+    }
+
     pub fn focus_next_in_focused_child(&mut self) -> bool {
         match self.focus_index {
             Some(index) => self.widgets[index].widget.focus_next_in_children(),
+            None => false,
+        }
+    }
+
+    pub fn focus_prev_in_focused_child(&mut self) -> bool {
+        match self.focus_index {
+            Some(index) => self.widgets[index].widget.focus_prev_in_children(),
             None => false,
         }
     }

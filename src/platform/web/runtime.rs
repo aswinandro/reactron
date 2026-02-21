@@ -93,7 +93,11 @@ pub fn start() -> Result<(), JsValue> {
                     &context_ref,
                     &canvas_ref,
                     &window_ref,
-                    PointerSignal::FocusNext,
+                    if event.shift_key() {
+                        PointerSignal::FocusPrev
+                    } else {
+                        PointerSignal::FocusNext
+                    },
                 );
             } else if key == "Backspace" {
                 event.prevent_default();

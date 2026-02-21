@@ -113,6 +113,24 @@ impl ListView {
     fn page_delta(&self) -> isize {
         (self.rect.height / self.row_height).floor().max(1.0) as isize
     }
+
+    fn jump_to_match(&mut self, needle: &str) -> Option<UiEvent> {
+        if needle.is_empty() || self.items.is_empty() {
+            return None;
+        }
+
+        let query = needle.to_lowercase();
+        let start = self.selected.map(|index| index + 1).unwrap_or(0);
+
+        for offset in 0..self.items.len() {
+            let index = (start + offset) % self.items.len();
+            if self.items[index].to_lowercase().contains(&query) {
+                return self.select_by_index(index);
+            }
+        }
+
+        None
+    }
 }
 
 impl Widget for ListView {
@@ -164,6 +182,11 @@ impl Widget for ListView {
                 }
             } else if pointer.move_end && !self.items.is_empty() {
                 if let Some(event) = self.select_by_index(self.items.len() - 1) {
+                    events.push(event);
+                }
+            }
+            if let Some(input) = &pointer.text_input {
+                if let Some(event) = self.jump_to_match(input) {
                     events.push(event);
                 }
             }
@@ -231,4 +254,3 @@ impl Widget for ListView {
         self
     }
 }
-
