@@ -46,6 +46,36 @@ pub fn start() -> Result<(), JsValue> {
                     PointerSignal::SelectAll,
                 );
                 return;
+            } else if (event.ctrl_key() || event.meta_key()) && key.eq_ignore_ascii_case("c") {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::Copy,
+                );
+                return;
+            } else if (event.ctrl_key() || event.meta_key()) && key.eq_ignore_ascii_case("x") {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::Cut,
+                );
+                return;
+            } else if (event.ctrl_key() || event.meta_key()) && key.eq_ignore_ascii_case("v") {
+                event.prevent_default();
+                dispatch_and_render(
+                    &app_ref,
+                    &context_ref,
+                    &canvas_ref,
+                    &window_ref,
+                    PointerSignal::Paste,
+                );
+                return;
             }
             if key == "Enter" || key == " " {
                 event.prevent_default();

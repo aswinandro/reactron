@@ -21,6 +21,9 @@ pub struct PointerState {
     pub move_home: bool,
     pub move_end: bool,
     pub select_all: bool,
+    pub copy: bool,
+    pub cut: bool,
+    pub paste: bool,
     pub cancel: bool,
     pub scroll_y: f64,
 }
@@ -46,6 +49,9 @@ pub enum PointerSignal {
     MoveHome,
     MoveEnd,
     SelectAll,
+    Copy,
+    Cut,
+    Paste,
     Cancel,
     Scroll { x: f64, y: f64, delta_y: f64 },
 }
@@ -127,6 +133,15 @@ impl PointerState {
             PointerSignal::SelectAll => {
                 self.select_all = true;
             }
+            PointerSignal::Copy => {
+                self.copy = true;
+            }
+            PointerSignal::Cut => {
+                self.cut = true;
+            }
+            PointerSignal::Paste => {
+                self.paste = true;
+            }
             PointerSignal::Cancel => {
                 self.cancel = true;
             }
@@ -157,6 +172,9 @@ impl PointerState {
         self.move_home = false;
         self.move_end = false;
         self.select_all = false;
+        self.copy = false;
+        self.cut = false;
+        self.paste = false;
         self.cancel = false;
         self.scroll_y = 0.0;
     }

@@ -303,7 +303,10 @@ impl UiTree {
                 width,
                 height,
             };
-            if pointer.just_released && rect.contains(pointer.x, pointer.y) && entry.widget.focusable() {
+            if (pointer.just_pressed || pointer.just_released)
+                && rect.contains(pointer.x, pointer.y)
+                && entry.widget.focusable()
+            {
                 self.focus_index = Some(index);
             }
             entry.widget.set_focused(self.focus_index == Some(index));
@@ -384,7 +387,10 @@ impl UiTree {
                 width,
                 height,
             };
-            if pointer.just_released && rect.contains(pointer.x, pointer.y) && entry.widget.focusable() {
+            if (pointer.just_pressed || pointer.just_released)
+                && rect.contains(pointer.x, pointer.y)
+                && entry.widget.focusable()
+            {
                 self.focus_index = Some(index);
             }
             entry.widget.set_focused(self.focus_index == Some(index));
@@ -449,7 +455,10 @@ impl UiTree {
                 width,
                 height,
             };
-            if pointer.just_released && rect.contains(pointer.x, pointer.y) && entry.widget.focusable() {
+            if (pointer.just_pressed || pointer.just_released)
+                && rect.contains(pointer.x, pointer.y)
+                && entry.widget.focusable()
+            {
                 self.focus_index = Some(index);
             }
             entry.widget.set_focused(self.focus_index == Some(index));

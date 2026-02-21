@@ -2,7 +2,12 @@ use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
 use crate::ui::tree::{UiEvent, Widget};
 use std::any::Any;
+use std::cell::RefCell;
 use web_sys::CanvasRenderingContext2d;
+
+thread_local! {
+    static INTERNAL_CLIPBOARD: RefCell<String> = const { RefCell::new(String::new()) };
+}
 
 pub struct TextInput {
     pub key: &'static str,
@@ -13,6 +18,7 @@ pub struct TextInput {
     pub focused: bool,
     pub cursor: usize,
     pub selection_anchor: Option<usize>,
+    pub dragging_selection: bool,
 }
 
 pub struct TextInputStyle {
@@ -137,11 +143,23 @@ impl Widget for TextInput {
                 self.cursor = self.value.len();
             }
 
-            if pointer.just_released && self.rect.contains(pointer.x, pointer.y) {
+            if pointer.just_pressed && self.rect.contains(pointer.x, pointer.y) {
                 context.set_font(self.style.font);
                 let text_x = self.rect.x + self.style.padding_x;
                 self.set_cursor_from_x(context, (pointer.x - text_x).max(0.0));
-                self.clear_selection();
+                self.selection_anchor = Some(self.cursor);
+                self.dragging_selection = true;
+            }
+            if pointer.is_down && self.dragging_selection {
+                context.set_font(self.style.font);
+                let text_x = self.rect.x + self.style.padding_x;
+                self.set_cursor_from_x(context, (pointer.x - text_x).max(0.0));
+            }
+            if pointer.just_released && self.dragging_selection {
+                self.dragging_selection = false;
+                if self.selection_range().is_none() {
+                    self.clear_selection();
+                }
             }
 
             if pointer.move_home {
@@ -212,6 +230,42 @@ impl Widget for TextInput {
                     key: self.key,
                     value: self.value.clone(),
                 });
+            }
+            if pointer.copy {
+                if let Some((start, end)) = self.selection_range() {
+                    let copied = self.value[start..end].to_string();
+                    INTERNAL_CLIPBOARD.with(|buffer| {
+                        *buffer.borrow_mut() = copied;
+                    });
+                }
+            }
+            if pointer.cut {
+                if let Some((start, end)) = self.selection_range() {
+                    let cut = self.value[start..end].to_string();
+                    INTERNAL_CLIPBOARD.with(|buffer| {
+                        *buffer.borrow_mut() = cut;
+                    });
+                    self.value.replace_range(start..end, "");
+                    self.cursor = start;
+                    self.clear_selection();
+                    events.push(UiEvent::ValueChanged {
+                        key: self.key,
+                        value: self.value.clone(),
+                    });
+                }
+            }
+            if pointer.paste {
+                let pasted = INTERNAL_CLIPBOARD.with(|buffer| buffer.borrow().clone());
+                if !pasted.is_empty() {
+                    let _ = self.delete_selection_if_any();
+                    self.value.insert_str(self.cursor, &pasted);
+                    self.cursor += pasted.len();
+                    self.clear_selection();
+                    events.push(UiEvent::ValueChanged {
+                        key: self.key,
+                        value: self.value.clone(),
+                    });
+                }
             }
         }
 
@@ -292,6 +346,7 @@ impl Widget for TextInput {
         self.focused = focused;
         if !focused {
             self.clear_selection();
+            self.dragging_selection = false;
         }
     }
 
