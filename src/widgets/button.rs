@@ -1,10 +1,11 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
-use crate::ui::tree::{UiEvent, Widget};
+use crate::ui::tree::{UiAction, UiEvent, Widget};
+use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
 
 pub struct Button {
-    pub action: &'static str,
+    pub action: UiAction,
     pub rect: Rect,
     pub label: &'static str,
     pub style: ButtonStyle,
@@ -91,5 +92,9 @@ impl Widget for Button {
         } else {
             None
         }
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }

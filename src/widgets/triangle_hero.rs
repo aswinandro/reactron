@@ -1,11 +1,18 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
 use crate::ui::tree::{UiEvent, Widget};
+use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
 
 pub struct TriangleHero {
     pub rect: Rect,
     pub color: &'static str,
+}
+
+impl TriangleHero {
+    pub fn set_color(&mut self, color: &'static str) {
+        self.color = color;
+    }
 }
 
 impl Widget for TriangleHero {
@@ -36,5 +43,8 @@ impl Widget for TriangleHero {
         context.fill();
         None
     }
-}
 
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}

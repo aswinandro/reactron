@@ -1,16 +1,23 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
 use crate::core::layout::VerticalLayout;
+use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
 
 pub enum UiEvent {
-    Action(&'static str),
+    Action(UiAction),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum UiAction {
+    ToggleAccent,
 }
 
 pub trait Widget {
     fn desired_height(&self) -> f64;
     fn set_rect(&mut self, rect: Rect);
     fn draw(&mut self, context: &CanvasRenderingContext2d, pointer: &PointerState) -> Option<UiEvent>;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 pub struct UiTree {
@@ -30,6 +37,16 @@ impl UiTree {
 
     pub fn push(&mut self, widget: Box<dyn Widget>) {
         self.widgets.push(widget);
+    }
+
+    pub fn set_area(&mut self, area: Rect) {
+        self.area = area;
+    }
+
+    pub fn widget_mut<T: 'static>(&mut self, index: usize) -> Option<&mut T> {
+        self.widgets
+            .get_mut(index)
+            .and_then(|widget| widget.as_any_mut().downcast_mut::<T>())
     }
 
     pub fn draw(

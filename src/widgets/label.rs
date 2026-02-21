@@ -1,6 +1,7 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
 use crate::ui::tree::{UiEvent, Widget};
+use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
 
 pub struct Label {
@@ -12,6 +13,12 @@ pub struct Label {
 pub struct LabelStyle {
     pub font: &'static str,
     pub color: &'static str,
+}
+
+impl Label {
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+    }
 }
 
 impl Widget for Label {
@@ -39,5 +46,8 @@ impl Widget for Label {
         );
         None
     }
-}
 
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
