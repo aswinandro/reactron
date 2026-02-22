@@ -6,10 +6,12 @@ use crate::ui::tree::{
     CrossAlign, EdgeInsets, LayoutProps, SizeSpec, UiAction, UiEvent, UiTree,
 };
 use crate::widgets::button::{Button, ButtonStyle};
+use crate::widgets::checkbox::{Checkbox, CheckboxStyle};
 use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::form_field::{FormField, FormFieldStyle};
 use crate::widgets::label::{Label, LabelStyle};
 use crate::widgets::list_view::{ListView, ListViewStyle};
+use crate::widgets::radio_group::{RadioGroup, RadioGroupStyle};
 use crate::widgets::select::{Select, SelectStyle};
 use crate::widgets::slider::{Slider, SliderStyle};
 use crate::widgets::text_input::{TextInput, TextInputStyle};
@@ -26,6 +28,8 @@ pub struct DemoState {
     pub query: String,
     pub preset: String,
     pub intensity: f64,
+    pub animations: bool,
+    pub density: String,
     pub selected_item: String,
     pub pointer: PointerState,
 }
@@ -44,6 +48,8 @@ const KEY_CTRL_QUERY: &str = "ctrl_query";
 const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
 const KEY_CTRL_PRESET: &str = "ctrl_preset";
 const KEY_CTRL_INTENSITY: &str = "ctrl_intensity";
+const KEY_CTRL_ANIMATIONS: &str = "ctrl_animations";
+const KEY_CTRL_DENSITY: &str = "ctrl_density";
 
 impl DemoApp {
     pub fn new() -> Self {
@@ -310,6 +316,55 @@ impl DemoApp {
                         4,
                     );
                     row.push_key_with_order(
+                        KEY_CTRL_ANIMATIONS,
+                        Box::new(Checkbox {
+                            key: "ui_animations",
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            value: true,
+                            label: "Animations",
+                            focused: false,
+                            style: CheckboxStyle::default(),
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(0.9),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                        5,
+                    );
+                    row.push_key_with_order(
+                        KEY_CTRL_DENSITY,
+                        Box::new(RadioGroup {
+                            key: "ui_density",
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            label: "Density",
+                            options: vec![
+                                "Compact".to_string(),
+                                "Cozy".to_string(),
+                                "Comfort".to_string(),
+                            ],
+                            selected: 1,
+                            focused: false,
+                            style: RadioGroupStyle::default(),
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(1.3),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                        6,
+                    );
+                    row.push_key_with_order(
                         KEY_CTRL_PRESET,
                         Box::new(Select {
                             key: "theme_preset",
@@ -332,11 +387,11 @@ impl DemoApp {
                             label: "Preset",
                         }),
                         LayoutProps {
-                            width: SizeSpec::Flex(1.1),
+                            width: SizeSpec::Flex(0.95),
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        5,
+                        7,
                     );
                     row
                 },
@@ -358,6 +413,8 @@ impl DemoApp {
                 query: String::new(),
                 preset: "Ocean".to_string(),
                 intensity: 65.0,
+                animations: true,
+                density: "Cozy".to_string(),
                 selected_item: "Widget Item 001".to_string(),
                 ..DemoState::default()
             },
@@ -424,11 +481,13 @@ impl DemoApp {
         }
         if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
             clicks_label.set_text(format!(
-                "Clicks: {} | Query: {} | Preset: {} | Intensity: {:.0}% | Selected: {}",
+                "Clicks: {} | Query: {} | Preset: {} | Intensity: {:.0}% | Animations: {} | Density: {} | Selected: {}",
                 self.state.clicks,
                 self.state.query,
                 self.state.preset,
                 self.state.intensity,
+                if self.state.animations { "On" } else { "Off" },
+                self.state.density,
                 self.state.selected_item
             ));
         }
@@ -451,6 +510,12 @@ impl DemoApp {
             }
             if let Some(slider) = field.child_mut().widget_mut_by_key::<Slider>(KEY_CTRL_INTENSITY) {
                 slider.set_value(self.state.intensity);
+            }
+            if let Some(checkbox) = field.child_mut().widget_mut_by_key::<Checkbox>(KEY_CTRL_ANIMATIONS) {
+                checkbox.set_value(self.state.animations);
+            }
+            if let Some(radio) = field.child_mut().widget_mut_by_key::<RadioGroup>(KEY_CTRL_DENSITY) {
+                radio.set_selected_by_value(&self.state.density);
             }
             let validation = if self.state.query.trim().is_empty() {
                 Some("Query is empty. Type to filter list items.".to_string())
@@ -493,6 +558,18 @@ impl DemoApp {
                     value,
                 } => {
                     self.state.intensity = value.parse::<f64>().unwrap_or(self.state.intensity);
+                }
+                UiEvent::ValueChanged {
+                    key: "ui_animations",
+                    value,
+                } => {
+                    self.state.animations = value == "true";
+                }
+                UiEvent::ValueChanged {
+                    key: "ui_density",
+                    value,
+                } => {
+                    self.state.density = value;
                 }
                 UiEvent::ValueChanged { .. } => {}
             }
