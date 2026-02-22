@@ -4,6 +4,7 @@ pub mod form_field;
 pub mod label;
 pub mod list_view;
 pub mod select;
+pub mod slider;
 pub mod text_input;
 pub mod toggle;
 pub mod triangle_hero;

@@ -1,5 +1,6 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
+use crate::core::navigation::{find_next_prefix, step_wrapped};
 use crate::ui::tree::{UiEvent, Widget};
 use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
@@ -61,7 +62,7 @@ impl Select {
         if self.options.is_empty() {
             return None;
         }
-        self.selected = (self.selected + 1) % self.options.len();
+        self.selected = step_wrapped(Some(self.selected), 1, self.options.len()).unwrap_or(0);
         Some(UiEvent::ValueChanged {
             key: self.key,
             value: self.selected_value(),
@@ -72,11 +73,7 @@ impl Select {
         if self.options.is_empty() {
             return None;
         }
-        self.selected = if self.selected == 0 {
-            self.options.len() - 1
-        } else {
-            self.selected - 1
-        };
+        self.selected = step_wrapped(Some(self.selected), -1, self.options.len()).unwrap_or(0);
         Some(UiEvent::ValueChanged {
             key: self.key,
             value: self.selected_value(),
@@ -109,19 +106,16 @@ impl Select {
         if needle.is_empty() || self.options.is_empty() {
             return None;
         }
-        let query = needle.to_lowercase();
-        let start = self.selected + 1;
-        for offset in 0..self.options.len() {
-            let index = (start + offset) % self.options.len();
-            if self.options[index].to_lowercase().starts_with(&query) {
-                self.selected = index;
-                self.highlighted = index;
-                return Some(UiEvent::ValueChanged {
-                    key: self.key,
-                    value: self.selected_value(),
-                });
-            }
+
+        if let Some(index) = find_next_prefix(&self.options, needle, Some(self.selected)) {
+            self.selected = index;
+            self.highlighted = index;
+            return Some(UiEvent::ValueChanged {
+                key: self.key,
+                value: self.selected_value(),
+            });
         }
+
         None
     }
 }

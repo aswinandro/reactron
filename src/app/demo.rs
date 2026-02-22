@@ -11,6 +11,7 @@ use crate::widgets::form_field::{FormField, FormFieldStyle};
 use crate::widgets::label::{Label, LabelStyle};
 use crate::widgets::list_view::{ListView, ListViewStyle};
 use crate::widgets::select::{Select, SelectStyle};
+use crate::widgets::slider::{Slider, SliderStyle};
 use crate::widgets::text_input::{TextInput, TextInputStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
 use crate::widgets::triangle_hero::TriangleHero;
@@ -24,6 +25,7 @@ pub struct DemoState {
     pub clicks: u32,
     pub query: String,
     pub preset: String,
+    pub intensity: f64,
     pub selected_item: String,
     pub pointer: PointerState,
 }
@@ -41,6 +43,7 @@ const KEY_CONTROLS_FIELD: &str = "controls_field";
 const KEY_CTRL_QUERY: &str = "ctrl_query";
 const KEY_CTRL_TOGGLE_NEON: &str = "ctrl_toggle_neon";
 const KEY_CTRL_PRESET: &str = "ctrl_preset";
+const KEY_CTRL_INTENSITY: &str = "ctrl_intensity";
 
 impl DemoApp {
     pub fn new() -> Self {
@@ -281,6 +284,32 @@ impl DemoApp {
                         3,
                     );
                     row.push_key_with_order(
+                        KEY_CTRL_INTENSITY,
+                        Box::new(Slider {
+                            key: "ui_intensity",
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            value: 65.0,
+                            min: 0.0,
+                            max: 100.0,
+                            step: 5.0,
+                            label: "Intensity",
+                            focused: false,
+                            dragging: false,
+                            style: SliderStyle::default(),
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(1.2),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                        4,
+                    );
+                    row.push_key_with_order(
                         KEY_CTRL_PRESET,
                         Box::new(Select {
                             key: "theme_preset",
@@ -303,11 +332,11 @@ impl DemoApp {
                             label: "Preset",
                         }),
                         LayoutProps {
-                            width: SizeSpec::Flex(1.0),
+                            width: SizeSpec::Flex(1.1),
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        4,
+                        5,
                     );
                     row
                 },
@@ -328,6 +357,7 @@ impl DemoApp {
                 neon_mode: true,
                 query: String::new(),
                 preset: "Ocean".to_string(),
+                intensity: 65.0,
                 selected_item: "Widget Item 001".to_string(),
                 ..DemoState::default()
             },
@@ -365,7 +395,13 @@ impl DemoApp {
             accent_secondary
         };
         let hero_color = if self.state.neon_mode {
-            triangle_color
+            if self.state.intensity >= 75.0 {
+                triangle_color
+            } else if self.state.intensity >= 40.0 {
+                "#6ddfd0"
+            } else {
+                "#5c779f"
+            }
         } else {
             "#7481a3"
         };
@@ -388,8 +424,12 @@ impl DemoApp {
         }
         if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
             clicks_label.set_text(format!(
-                "Clicks: {} | Query: {} | Preset: {} | Selected: {}",
-                self.state.clicks, self.state.query, self.state.preset, self.state.selected_item
+                "Clicks: {} | Query: {} | Preset: {} | Intensity: {:.0}% | Selected: {}",
+                self.state.clicks,
+                self.state.query,
+                self.state.preset,
+                self.state.intensity,
+                self.state.selected_item
             ));
         }
         if let Some(hint_label) = self.ui.widget_mut_by_key::<Label>(KEY_HINT_LABEL) {
@@ -408,6 +448,9 @@ impl DemoApp {
             }
             if let Some(select) = field.child_mut().widget_mut_by_key::<Select>(KEY_CTRL_PRESET) {
                 select.set_selected_by_value(&self.state.preset);
+            }
+            if let Some(slider) = field.child_mut().widget_mut_by_key::<Slider>(KEY_CTRL_INTENSITY) {
+                slider.set_value(self.state.intensity);
             }
             let validation = if self.state.query.trim().is_empty() {
                 Some("Query is empty. Type to filter list items.".to_string())
@@ -444,6 +487,12 @@ impl DemoApp {
                     value,
                 } => {
                     self.state.selected_item = value;
+                }
+                UiEvent::ValueChanged {
+                    key: "ui_intensity",
+                    value,
+                } => {
+                    self.state.intensity = value.parse::<f64>().unwrap_or(self.state.intensity);
                 }
                 UiEvent::ValueChanged { .. } => {}
             }

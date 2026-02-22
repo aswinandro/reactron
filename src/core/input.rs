@@ -71,6 +71,36 @@ pub enum PointerSignal {
 }
 
 impl PointerState {
+    pub fn suppress_focus_and_text_input(&mut self) {
+        self.activate_primary = false;
+        self.focus_next = false;
+        self.focus_prev = false;
+        self.text_input = None;
+        self.backspace = false;
+        self.delete_forward = false;
+        self.move_left = false;
+        self.move_right = false;
+        self.move_left_select = false;
+        self.move_right_select = false;
+        self.move_word_left = false;
+        self.move_word_right = false;
+        self.move_word_left_select = false;
+        self.move_word_right_select = false;
+        self.move_up = false;
+        self.move_down = false;
+        self.move_up_select = false;
+        self.move_down_select = false;
+        self.move_page_up = false;
+        self.move_page_down = false;
+        self.move_home = false;
+        self.move_end = false;
+        self.select_all = false;
+        self.copy = false;
+        self.cut = false;
+        self.paste = false;
+        self.cancel = false;
+    }
+
     pub fn apply(&mut self, signal: PointerSignal) {
         match signal {
             PointerSignal::Move { x, y } => {

@@ -1,5 +1,6 @@
 use crate::core::geometry::Rect;
 use crate::core::input::PointerState;
+use crate::core::navigation::{find_next_contains, step_clamped};
 use crate::ui::tree::{UiEvent, Widget};
 use std::any::Any;
 use web_sys::CanvasRenderingContext2d;
@@ -109,9 +110,12 @@ impl ListView {
             self.selected = None;
             return None;
         }
-        let base = self.selected.unwrap_or(0) as isize;
-        let next = (base + delta).clamp(0, self.items.len() as isize - 1) as usize;
-        self.select_by_index(next)
+
+        if let Some(next) = step_clamped(self.selected, delta, self.items.len()) {
+            return self.select_by_index(next);
+        }
+
+        None
     }
 
     fn page_delta(&self) -> isize {
@@ -122,8 +126,9 @@ impl ListView {
         if self.items.is_empty() {
             return None;
         }
-        let current = self.selected.unwrap_or(0) as isize;
-        let next = (current + delta).clamp(0, self.items.len() as isize - 1) as usize;
+        let Some(next) = step_clamped(self.selected, delta, self.items.len()) else {
+            return None;
+        };
         if self.selection_anchor.is_none() {
             self.selection_anchor = Some(self.selected.unwrap_or(next));
         }
@@ -154,14 +159,8 @@ impl ListView {
             return None;
         }
 
-        let query = needle.to_lowercase();
-        let start = self.selected.map(|index| index + 1).unwrap_or(0);
-
-        for offset in 0..self.items.len() {
-            let index = (start + offset) % self.items.len();
-            if self.items[index].to_lowercase().contains(&query) {
-                return self.select_by_index(index);
-            }
+        if let Some(index) = find_next_contains(&self.items, needle, self.selected) {
+            return self.select_by_index(index);
         }
 
         None
