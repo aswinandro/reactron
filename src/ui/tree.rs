@@ -15,6 +15,7 @@ pub enum UiEvent {
 pub enum UiAction {
     ToggleAccent,
     SetNeon(bool),
+    OpenModal,
 }
 
 pub trait Widget {

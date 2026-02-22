@@ -3,7 +3,7 @@ use crate::core::input::{PointerSignal, PointerState};
 use crate::render::canvas2d;
 use crate::theme::REACTRON_THEME;
 use crate::ui::tree::{
-    CrossAlign, EdgeInsets, LayoutProps, SizeSpec, UiAction, UiEvent, UiTree,
+    CrossAlign, EdgeInsets, LayoutProps, SizeSpec, UiAction, UiEvent, UiTree, Widget,
 };
 use crate::widgets::button::{Button, ButtonStyle};
 use crate::widgets::checkbox::{Checkbox, CheckboxStyle};
@@ -11,9 +11,11 @@ use crate::widgets::container::{Container, ContainerStyle};
 use crate::widgets::form_field::{FormField, FormFieldStyle};
 use crate::widgets::label::{Label, LabelStyle};
 use crate::widgets::list_view::{ListView, ListViewStyle};
+use crate::widgets::modal::{Modal, ModalStyle};
 use crate::widgets::radio_group::{RadioGroup, RadioGroupStyle};
 use crate::widgets::select::{Select, SelectStyle};
 use crate::widgets::slider::{Slider, SliderStyle};
+use crate::widgets::tabs::{Tabs, TabsStyle};
 use crate::widgets::text_input::{TextInput, TextInputStyle};
 use crate::widgets::toggle::{Toggle, ToggleStyle};
 use crate::widgets::triangle_hero::TriangleHero;
@@ -30,6 +32,9 @@ pub struct DemoState {
     pub intensity: f64,
     pub animations: bool,
     pub density: String,
+    pub active_tab: String,
+    pub modal_result: String,
+    pub show_modal: bool,
     pub selected_item: String,
     pub pointer: PointerState,
 }
@@ -37,11 +42,13 @@ pub struct DemoState {
 pub struct DemoApp {
     state: DemoState,
     ui: UiTree,
+    modal: Modal,
 }
 
 const KEY_TRIANGLE: &str = "triangle_hero";
 const KEY_CLICK_LABEL: &str = "clicks_label";
 const KEY_HINT_LABEL: &str = "hint_label";
+const KEY_TABS: &str = "main_tabs";
 const KEY_RESULTS_LIST: &str = "results_list";
 const KEY_CONTROLS_FIELD: &str = "controls_field";
 const KEY_CTRL_QUERY: &str = "ctrl_query";
@@ -50,6 +57,7 @@ const KEY_CTRL_PRESET: &str = "ctrl_preset";
 const KEY_CTRL_INTENSITY: &str = "ctrl_intensity";
 const KEY_CTRL_ANIMATIONS: &str = "ctrl_animations";
 const KEY_CTRL_DENSITY: &str = "ctrl_density";
+const KEY_CTRL_MODAL_BTN: &str = "ctrl_modal_btn";
 
 impl DemoApp {
     pub fn new() -> Self {
@@ -123,6 +131,32 @@ impl DemoApp {
                 align_self: Some(CrossAlign::Stretch),
             },
         );
+        ui.push_key_with_order(
+            KEY_TABS,
+            Box::new(Tabs {
+                key: "main_tab",
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 408.0,
+                    height: 34.0,
+                },
+                options: vec![
+                    "Overview".to_string(),
+                    "Controls".to_string(),
+                    "Metrics".to_string(),
+                ],
+                selected: 0,
+                focused: false,
+                style: TabsStyle::default(),
+            }),
+            LayoutProps {
+                width: SizeSpec::Flex(1.0),
+                height: SizeSpec::Fixed(34.0),
+                align_self: Some(CrossAlign::Stretch),
+            },
+            0,
+        );
         ui.push_key_with(
             KEY_CLICK_LABEL,
             Box::new(Label {
@@ -174,7 +208,7 @@ impl DemoApp {
                     width: 408.0,
                     height: 190.0,
                 },
-                items: make_demo_items(""),
+                items: make_demo_items("", "Overview"),
                 row_height: 28.0,
                 scroll_offset: 0.0,
                 key: "results_item",
@@ -269,6 +303,35 @@ impl DemoApp {
                         2,
                     );
                     row.push_key_with_order(
+                        KEY_CTRL_MODAL_BTN,
+                        Box::new(Button {
+                            action: UiAction::OpenModal,
+                            rect: Rect {
+                                x: 0.0,
+                                y: 0.0,
+                                width: 0.0,
+                                height: 44.0,
+                            },
+                            label: "Open Modal",
+                            style: ButtonStyle {
+                                idle_fill: "#1b2744",
+                                hover_fill: "#2b3f6e",
+                                pressed_fill: "#25365d",
+                                border: "#4765a7",
+                                focus_border: "#27ffd8",
+                                text: REACTRON_THEME.text_primary,
+                                font: "600 14px Consolas",
+                            },
+                            focused: false,
+                        }),
+                        LayoutProps {
+                            width: SizeSpec::Flex(0.9),
+                            height: SizeSpec::Fixed(44.0),
+                            align_self: Some(CrossAlign::Stretch),
+                        },
+                        3,
+                    );
+                    row.push_key_with_order(
                         KEY_CTRL_TOGGLE_NEON,
                         Box::new(Toggle {
                             rect: Rect {
@@ -283,11 +346,11 @@ impl DemoApp {
                             focused: false,
                         }),
                         LayoutProps {
-                            width: SizeSpec::Flex(1.0),
+                            width: SizeSpec::Flex(0.9),
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        3,
+                        4,
                     );
                     row.push_key_with_order(
                         KEY_CTRL_INTENSITY,
@@ -313,7 +376,7 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        4,
+                        5,
                     );
                     row.push_key_with_order(
                         KEY_CTRL_ANIMATIONS,
@@ -335,7 +398,7 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        5,
+                        6,
                     );
                     row.push_key_with_order(
                         KEY_CTRL_DENSITY,
@@ -362,7 +425,7 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        6,
+                        7,
                     );
                     row.push_key_with_order(
                         KEY_CTRL_PRESET,
@@ -391,7 +454,7 @@ impl DemoApp {
                             height: SizeSpec::Fixed(44.0),
                             align_self: Some(CrossAlign::Stretch),
                         },
-                        7,
+                        8,
                     );
                     row
                 },
@@ -415,10 +478,31 @@ impl DemoApp {
                 intensity: 65.0,
                 animations: true,
                 density: "Cozy".to_string(),
+                active_tab: "Overview".to_string(),
+                modal_result: "none".to_string(),
+                show_modal: false,
                 selected_item: "Widget Item 001".to_string(),
                 ..DemoState::default()
             },
             ui,
+            modal: Modal {
+                key: "demo_modal_open",
+                result_key: "demo_modal_result",
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 0.0,
+                    height: 0.0,
+                },
+                open: false,
+                title: "Reactron Modal".to_string(),
+                message: "This is a reusable modal primitive with dismiss/cancel/confirm paths."
+                    .to_string(),
+                confirm_label: "Confirm",
+                cancel_label: "Cancel",
+                focused: true,
+                style: ModalStyle::default(),
+            },
         }
     }
 
@@ -466,7 +550,7 @@ impl DemoApp {
         let interaction_text = if self.state.pointer.is_down {
             "Pointer down: release on button to trigger"
         } else {
-            "Tab/Shift+Tab focus | Shift+Up/Down range-select list | Ctrl+Arrows word move/edit"
+            "Tab/Shift+Tab focus | Left/Right on tabs | Esc closes modal"
         };
 
         self.ui.set_area(Rect {
@@ -481,13 +565,15 @@ impl DemoApp {
         }
         if let Some(clicks_label) = self.ui.widget_mut_by_key::<Label>(KEY_CLICK_LABEL) {
             clicks_label.set_text(format!(
-                "Clicks: {} | Query: {} | Preset: {} | Intensity: {:.0}% | Animations: {} | Density: {} | Selected: {}",
+                "Clicks: {} | Tab: {} | Query: {} | Preset: {} | Intensity: {:.0}% | Animations: {} | Density: {} | Modal: {} | Selected: {}",
                 self.state.clicks,
+                self.state.active_tab,
                 self.state.query,
                 self.state.preset,
                 self.state.intensity,
                 if self.state.animations { "On" } else { "Off" },
                 self.state.density,
+                self.state.modal_result,
                 self.state.selected_item
             ));
         }
@@ -495,8 +581,11 @@ impl DemoApp {
             hint_label.set_text(interaction_text.to_string());
         }
         if let Some(list) = self.ui.widget_mut_by_key::<ListView>(KEY_RESULTS_LIST) {
-            list.set_items(make_demo_items(&self.state.query));
+            list.set_items(make_demo_items(&self.state.query, &self.state.active_tab));
             list.set_selected_by_value(&self.state.selected_item);
+        }
+        if let Some(tabs) = self.ui.widget_mut_by_key::<Tabs>(KEY_TABS) {
+            tabs.set_selected_by_value(&self.state.active_tab);
         }
         if let Some(field) = self.ui.widget_mut_by_key::<FormField>(KEY_CONTROLS_FIELD) {
             if let Some(input) = field.child_mut().widget_mut_by_key::<TextInput>(KEY_CTRL_QUERY) {
@@ -525,7 +614,28 @@ impl DemoApp {
             field.set_validation(validation);
         }
 
-        let events = self.ui.draw(context, &self.state.pointer);
+        let mut ui_pointer = self.state.pointer.clone();
+        if self.state.show_modal {
+            ui_pointer.just_pressed = false;
+            ui_pointer.just_released = false;
+            ui_pointer.is_down = false;
+            ui_pointer.suppress_focus_and_text_input();
+            ui_pointer.scroll_y = 0.0;
+        }
+
+        let mut events = self.ui.draw(context, &ui_pointer);
+        self.modal.set_open(self.state.show_modal);
+        self.modal.set_rect(Rect {
+            x: 0.0,
+            y: 0.0,
+            width,
+            height,
+        });
+        self.modal.set_message(format!(
+            "Density: {} | Preset: {} | Intensity: {:.0}%",
+            self.state.density, self.state.preset, self.state.intensity
+        ));
+        events.extend(self.modal.draw(context, &self.state.pointer));
         for event in events {
             match event {
                 UiEvent::Action(UiAction::ToggleAccent) => {
@@ -534,6 +644,17 @@ impl DemoApp {
                 }
                 UiEvent::Action(UiAction::SetNeon(enabled)) => {
                     self.state.neon_mode = enabled;
+                }
+                UiEvent::Action(UiAction::OpenModal) => {
+                    self.state.show_modal = true;
+                    self.state.modal_result = "opened".to_string();
+                }
+                UiEvent::ValueChanged {
+                    key: "main_tab",
+                    value,
+                } => {
+                    self.state.active_tab = value;
+                    self.state.selected_item = String::new();
                 }
                 UiEvent::ValueChanged {
                     key: "search_query",
@@ -571,6 +692,18 @@ impl DemoApp {
                 } => {
                     self.state.density = value;
                 }
+                UiEvent::ValueChanged {
+                    key: "demo_modal_open",
+                    value,
+                } => {
+                    self.state.show_modal = value == "true";
+                }
+                UiEvent::ValueChanged {
+                    key: "demo_modal_result",
+                    value,
+                } => {
+                    self.state.modal_result = value;
+                }
                 UiEvent::ValueChanged { .. } => {}
             }
         }
@@ -580,9 +713,14 @@ impl DemoApp {
     }
 }
 
-fn make_demo_items(query: &str) -> Vec<String> {
+fn make_demo_items(query: &str, tab: &str) -> Vec<String> {
+    let prefix = match tab {
+        "Controls" => "Control",
+        "Metrics" => "Metric",
+        _ => "Widget",
+    };
     let items = (1..=120)
-        .map(|index| format!("Widget Item {:03}", index))
+        .map(|index| format!("{} Item {:03}", prefix, index))
         .collect::<Vec<_>>();
 
     if query.is_empty() {
